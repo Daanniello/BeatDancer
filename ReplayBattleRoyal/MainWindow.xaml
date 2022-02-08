@@ -31,6 +31,7 @@
         <Label x:Name="SpeedLabelText" Content="Speed:" HorizontalAlignment="Left" Height="26" Margin="147,0,0,25" VerticalAlignment="Bottom" Width="48" Foreground="White" RenderTransformOrigin="0.424,0.521" VerticalContentAlignment="Bottom"/>
         <Label x:Name="TimeLabelText" Content="Time:" HorizontalAlignment="Left" Height="26" Margin="32,0,0,63" VerticalAlignment="Bottom" Width="48" Foreground="White" RenderTransformOrigin="0.424,0.521" VerticalContentAlignment="Bottom"/>
         <Label x:Name="LoadingLabel" Content="Loading..." HorizontalAlignment="Left" Height="36" Margin="10,0,0,758" VerticalAlignment="Bottom" Width="275" Foreground="White" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"/>
+        <Label x:Name="BatteRoyalTimerLabel" Content="0" HorizontalAlignment="Left" Height="36" Margin="118,0,0,130" VerticalAlignment="Bottom" Width="64" Foreground="White" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"/>
 
     </Grid>
 </Window>

@@ -42,7 +42,7 @@ namespace ReplayBattleRoyal
         {
             InitializeComponent();
             _scoresaberClient = new ScoreSaberClient();
-            Start(387215, 20, country: null, streamMode: false, battleRoyalMode: false);
+            Start(387215, 6, country: null, streamMode: false, battleRoyalMode: false);
         }
 
         public async void Start(int songID, int playerAmount = 1, string country = null, bool streamMode = false, bool battleRoyalMode = false)
@@ -72,6 +72,7 @@ namespace ReplayBattleRoyal
             this.songID = songID;
             LoadingLabel.Content = $"Loading... Getting song info";
             leaderboardInfo = await _scoresaberClient.Api.Leaderboards.GetLeaderboardInfoByID(songID);
+
             this.hashCode = leaderboardInfo.SongHash.ToLower();
             var leaderboardScores = new List<Score>();
 
@@ -462,11 +463,11 @@ namespace ReplayBattleRoyal
                     var tipRight = new Test().RotateSaber(new Test.Point { x = frame.R.P.X, y = frame.R.P.Y, z = frame.R.P.Z }, 3, new Test.Quaternion { x = frame.R.R.X, y = frame.R.R.Y, z = frame.R.R.Z, w = (double)frame.R.R.W });
                     var tipLeft = new Test().RotateSaber(new Test.Point { x = frame.L.P.X, y = frame.L.P.Y, z = frame.L.P.Z }, 3, new Test.Quaternion { x = frame.L.R.X, y = frame.L.R.Y, z = frame.L.R.Z, w = (double)frame.L.R.W });
 
-                    Canvas.SetLeft(player.RightHandTip, tipRight.x * 150 + 700);
-                    Canvas.SetBottom(player.RightHandTip, tipRight.y * 130 + 350);
+                    Canvas.SetLeft(player.RightHandTip, tipRight.x * 170 + 700);
+                    Canvas.SetBottom(player.RightHandTip, tipRight.y * 130 + 300);
 
                     Canvas.SetLeft(player.LeftHandTip, tipLeft.x * 170 + 400);
-                    Canvas.SetBottom(player.LeftHandTip, tipLeft.y * 130 + 350);
+                    Canvas.SetBottom(player.LeftHandTip, tipLeft.y * 130 + 300);
 
 
 

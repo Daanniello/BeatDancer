@@ -36,13 +36,14 @@ namespace ReplayBattleRoyal
         private List<ListViewItem> _items = new List<ListViewItem>();
         private Leaderboard leaderboardInfo;
         private Random random = new Random();
-        private double _speedFactor = 7.5;
+        private double _speedFactor = 12.4;
 
         public MainWindow()
         {
             InitializeComponent();
             _scoresaberClient = new ScoreSaberClient();
-            Start(387215, 6, country: null, streamMode: false, battleRoyalMode: false);
+            //387215 7.5
+            Start(409137, 2, country: null, streamMode: false, battleRoyalMode: true);
         }
 
         public async void Start(int songID, int playerAmount = 1, string country = null, bool streamMode = false, bool battleRoyalMode = false)
@@ -152,7 +153,7 @@ namespace ReplayBattleRoyal
                 CanvasSpace.Children.Remove(playerToRemove.LeftHand);
                 CanvasSpace.Children.Remove(playerToRemove.RightHand);
                 CanvasSpace.Children.Remove(playerToRemove.LeftHandTip);
-                CanvasSpace.Children.Remove(playerToRemove.LeftHandTip);
+                CanvasSpace.Children.Remove(playerToRemove.RightHandTip);
                 ListViewPlayers.Items.Refresh();
                 foreach (var trail in playerToRemove.TrailListLeft) CanvasSpace.Children.Remove(trail);
                 foreach (var trail in playerToRemove.TrailListRight) CanvasSpace.Children.Remove(trail);
@@ -415,7 +416,7 @@ namespace ReplayBattleRoyal
                             {
                                 var name = item.Content.ToString().Split("|")[0].Trim();
                                 var nameWithSpace = name;
-                                for (var i = 0; i < 25 - name.Length; i++) nameWithSpace += " ";
+                                for (var i = 0; i < 20 - name.Length; i++) nameWithSpace += " ";
 
                                 if (player.ReplayModel.Combos.Count() != 0) item.Content = nameWithSpace + " | " + Math.Round((currentScore * 100) / currentMaxScore, 2) + " | " + player.ReplayModel.Combos.First();
                                 ListViewPlayers.ItemsSource = _items.OrderByDescending(x => x.Content.ToString().Split("|")[1].Trim());
@@ -431,43 +432,16 @@ namespace ReplayBattleRoyal
 
                 Dispatcher.Invoke(() =>
                 {
-                    ////TODO: Create saber tip swings
-                    //    var saberLength = 0.2;
 
-                    //    //Left Hand
-                    //    var leulerAngle = ToEulerAngles(new Quaternion { x = frame.L.R.X, y = frame.L.R.Y, z = frame.L.R.Z, w = (double)frame.L.R.W });
-                    //    //Create pitch degree from eulerAngle
-                    //    var lpitchDegree = leulerAngle.pitch * 45;
-                    //    //calculate y from pitch 
-                    //    var ly = Math.Sin(lpitchDegree) * (saberLength * leulerAngle.pitch);
-                    //    //Create yaw degree from eulerAngle
-                    //    var lyawDegree = leulerAngle.yaw * 45;
-                    //    //calculate x from yaw 
-                    //    var lx = Math.Sin(lyawDegree) * (saberLength * leulerAngle.yaw);
+                    //Set sabertip positions
+                    var tipRight = new Test().RotateSaber(new Test.Point { x = frame.R.P.X * 2 , y = frame.R.P.Y * 2, z = frame.R.P.Z * 2 }, 2.3, new Test.Quaternion { x = frame.R.R.X, y = frame.R.R.Y, z = frame.R.R.Z, w = (double)frame.R.R.W });
+                    var tipLeft = new Test().RotateSaber(new Test.Point { x = frame.L.P.X * 2, y = frame.L.P.Y * 2, z = frame.L.P.Z * 2 }, 2.3, new Test.Quaternion { x = frame.L.R.X, y = frame.L.R.Y, z = frame.L.R.Z, w = (double)frame.L.R.W });
 
-                    //    Canvas.SetLeft(player.LeftHandTip, centerWidth + (lx + frame.L.P.X) * zoomx);
-                    //    Canvas.SetBottom(player.LeftHandTip, centerHeight + offsetHeight + (ly + frame.L.P.Y) * zoomy);
+                    Canvas.SetLeft(player.RightHandTip, tipRight.x * 225 + 625);
+                    Canvas.SetBottom(player.RightHandTip, tipRight.y * 130 + 100);
 
-                    //    //Right Hand
-                    //    var reulerAngle = ToEulerAngles(new Quaternion { x = frame.R.R.X, y = frame.R.R.Y, z = frame.R.R.Z, w = (double)frame.R.R.W });
-
-                    //    //Create pitch degree from eulerAngle
-                    //    var rpitchDegree = reulerAngle.pitch * 45;
-                    //    //calculate y from pitch 
-                    //    var ry = Math.Sin(rpitchDegree) * (saberLength * reulerAngle.pitch);
-                    //    //Create yaw degree from eulerAngle
-                    //    var ryawDegree = reulerAngle.yaw * 45;
-                    //    //calculate x from yaw 
-                    //    var rx = Math.Sin(ryawDegree) * (saberLength * reulerAngle.yaw);
-
-                    var tipRight = new Test().RotateSaber(new Test.Point { x = frame.R.P.X, y = frame.R.P.Y, z = frame.R.P.Z }, 3, new Test.Quaternion { x = frame.R.R.X, y = frame.R.R.Y, z = frame.R.R.Z, w = (double)frame.R.R.W });
-                    var tipLeft = new Test().RotateSaber(new Test.Point { x = frame.L.P.X, y = frame.L.P.Y, z = frame.L.P.Z }, 3, new Test.Quaternion { x = frame.L.R.X, y = frame.L.R.Y, z = frame.L.R.Z, w = (double)frame.L.R.W });
-
-                    Canvas.SetLeft(player.RightHandTip, tipRight.x * 170 + 700);
-                    Canvas.SetBottom(player.RightHandTip, tipRight.y * 130 + 300);
-
-                    Canvas.SetLeft(player.LeftHandTip, tipLeft.x * 170 + 400);
-                    Canvas.SetBottom(player.LeftHandTip, tipLeft.y * 130 + 300);
+                    Canvas.SetLeft(player.LeftHandTip, tipLeft.x * 200 + 550);
+                    Canvas.SetBottom(player.LeftHandTip, tipLeft.y * 130 + 100);
 
 
 
@@ -541,7 +515,7 @@ namespace ReplayBattleRoyal
             //} while (staticFrameCount / avgFps * 50 < replayModel.Frames.Count);
 
             var player = new Player() { ID = playerID, LeftHand = leftHand, RightHand = rightHand, LeftHandTip = leftHandTip, RightHandTip = rightHandTip, ReplayModel = replayModel };
-            var listViewItem = new ListViewItem() { Content = playerInfo.Name + $" | 0", Background = player.LeftHand.Stroke };
+            var listViewItem = new ListViewItem() { Content = playerInfo.Name + $" | 0", Background = player.LeftHand.Stroke , FontSize = 21 };
 
             Players.Add(player);
             _items.Add(listViewItem);

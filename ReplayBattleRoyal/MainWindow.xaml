@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ReplayBattleRoyal"
         mc:Ignorable="d"
         Title="MainWindow" Height="963" Width="1730" WindowStartupLocation="CenterScreen" WindowState="Normal">
-    <Grid Background="#FF060606">
+    <Grid Background="Black">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="656*"/>
             <ColumnDefinition Width="651*"/>
@@ -15,7 +15,7 @@
             <Canvas x:Name="CanvasSpace" Background="#FF171717" Width="1200" HorizontalAlignment="Center" Height="901"/>
         </Grid>
         <Label x:Name="SongNameLabel" Content="Label" HorizontalAlignment="Left" Height="36" Margin="32,0,0,89" VerticalAlignment="Bottom" Width="158" Foreground="White" VerticalContentAlignment="Bottom"/>
-        <ListView x:Name="ListViewPlayers" Margin="0,-22,0,157" Background="#FF060606" VerticalContentAlignment="Stretch" UseLayoutRounding="False" ScrollViewer.VerticalScrollBarVisibility="Hidden" Visibility="Visible" HorizontalAlignment="Left" Width="300" BorderBrush="{x:Null}" ScrollViewer.HorizontalScrollBarVisibility="Hidden">
+        <ListView x:Name="ListViewPlayers" Margin="0,-22,0,157" Background="{x:Null}" VerticalContentAlignment="Stretch" UseLayoutRounding="False" ScrollViewer.VerticalScrollBarVisibility="Hidden" Visibility="Visible" HorizontalAlignment="Left" Width="568" BorderBrush="{x:Null}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" Foreground="#FF040404" FontFamily="Microsoft YaHei UI">
             <ListView.View>
                 <GridView>
                     <GridViewColumn/>
@@ -31,7 +31,7 @@
         <Label x:Name="SpeedLabelText" Content="Speed:" HorizontalAlignment="Left" Height="26" Margin="147,0,0,25" VerticalAlignment="Bottom" Width="48" Foreground="White" RenderTransformOrigin="0.424,0.521" VerticalContentAlignment="Bottom"/>
         <Label x:Name="TimeLabelText" Content="Time:" HorizontalAlignment="Left" Height="26" Margin="32,0,0,63" VerticalAlignment="Bottom" Width="48" Foreground="White" RenderTransformOrigin="0.424,0.521" VerticalContentAlignment="Bottom"/>
         <Label x:Name="LoadingLabel" Content="Loading..." HorizontalAlignment="Left" Height="36" Margin="10,0,0,758" VerticalAlignment="Bottom" Width="275" Foreground="White" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"/>
-        <Label x:Name="BatteRoyalTimerLabel" Content="0" HorizontalAlignment="Left" Height="36" Margin="118,0,0,130" VerticalAlignment="Bottom" Width="64" Foreground="White" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"/>
+        <Label x:Name="BatteRoyalTimerLabel" Content="0" HorizontalAlignment="Left" Height="90" Margin="168,0,0,25" VerticalAlignment="Bottom" Width="232" Foreground="White" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontFamily="Impact" FontSize="72" FontWeight="Normal"/>
 
     </Grid>
 </Window>

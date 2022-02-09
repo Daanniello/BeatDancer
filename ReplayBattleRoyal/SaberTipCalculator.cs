@@ -10,21 +10,21 @@ using System.Windows.Media.Media3D;
 
 namespace ReplayBattleRoyal
 {
-    public class Test
+    public class SaberTipCalculator
     {
-        public Test()
+        public SaberTipCalculator()
         {
 
         }
 
-        public Point RotateSaber(Point handPosition, double SaberLength, Quaternion quaternion)
+        public static Point RotateSaber(Point handPosition, double SaberLength, Quaternion quaternion)
         {
             var tipOffset = new Point { x = 0, y = 0, z = SaberLength };
             tipOffset = Rotate(tipOffset, quaternion);
             return AddPoints(tipOffset, handPosition);
         }
 
-        public Point Rotate(Point point, Quaternion q)
+        public static Point Rotate(Point point, Quaternion q)
         {
             if (Math.Round(Magnitude(q), 4) != 0)
             {
@@ -39,18 +39,18 @@ namespace ReplayBattleRoyal
 
         }
 
-        public double Magnitude(Quaternion q)
+        public static double Magnitude(Quaternion q)
         {
             return Math.Sqrt(Math.Pow(q.w, 2) + Math.Pow(q.x, 2) + Math.Pow(q.y, 2) + Math.Pow(q.z, 2));
         }
 
-        public Vector3D GetVector(Quaternion q)
+        public static Vector3D GetVector(Quaternion q)
         {
             return new Vector3D() { X = q.x, Y = q.y, Z = q.z };
 
         }
 
-        public Vector3 ScaleVector(Vector3 vector, double factor)
+        public static Vector3 ScaleVector(Vector3 vector, double factor)
         {
             return new Vector3()
             {
@@ -60,7 +60,7 @@ namespace ReplayBattleRoyal
             };
         }
 
-        public Vector3D AddVector(Vector3D vector, Vector3D vector2)
+        public static Vector3D AddVector(Vector3D vector, Vector3D vector2)
         {
             return new Vector3D()
             {
@@ -70,41 +70,30 @@ namespace ReplayBattleRoyal
             };
         }
 
-        public Vector3 CrossProduct(Vector3 v1, Vector3 v2)
-        {
-            double x, y, z;
-            x = v1.Y * v2.Z - v2.Y * v1.Z;
-            y = (v1.X * v2.Z - v2.X * v1.Z) * -1;
-            z = v1.X * v2.Y - v2.X * v1.Y;
-
-            var rtnvector = new Vector3() { X = (float)x, Y = (float)y, Z = (float)z };
-            return rtnvector;
-        }
-
-        public Quaternion Multiply(Quaternion q1, Quaternion q2)
+        public static Quaternion Multiply(Quaternion q1, Quaternion q2)
         {
             
             var tempVector = AddVector(AddVector(Vector3D.Multiply(GetVector(q2), q1.w), Vector3D.Multiply(GetVector(q1), q2.w)), Vector3D.CrossProduct(GetVector(q1), GetVector(q2)));
             return new Quaternion { w = q1.w * q2.w - Vector3D.DotProduct(GetVector(q1), GetVector(q2)), x = tempVector.X, y = tempVector.Y, z = tempVector.Z };
         }
 
-        public Quaternion Unit(Quaternion q)
+        public static Quaternion Unit(Quaternion q)
         {
             var factor = 1 / Magnitude(q);
             return new Quaternion { w = q.w * factor, x = q.x * factor, y = q.y * factor, z = q.z * factor };
         }
 
-        public Quaternion PureImaginaryQuaternion(Point point)
+        public static Quaternion PureImaginaryQuaternion(Point point)
         {
             return new Quaternion { w = 0, x = point.x, y = point.y, z = point.z };
         }
 
-        public Quaternion Conjugate(Quaternion q)
+        public static Quaternion Conjugate(Quaternion q)
         {
             return new Quaternion { w = q.w, x = -q.x, y = -q.y, z = -q.z };
         }
 
-        public Point AddPoints(Point p1, Point p2)
+        public static Point AddPoints(Point p1, Point p2)
         {
             return new Point
             {

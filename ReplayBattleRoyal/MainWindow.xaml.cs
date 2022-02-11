@@ -44,10 +44,10 @@ namespace ReplayBattleRoyal
         public MainWindow()
         {
             InitializeComponent();
-            
+
             _scoresaberClient = new ScoreSaberClient();
             //387215 7.5
-            Start(387215, 20, country: null, streamMode: true, battleRoyalMode: true);
+            Start(387215, 50, country: null, streamMode: true, battleRoyalMode: true);
         }
 
         public async void Start(int songID, int playerAmount = 1, string country = null, bool streamMode = false, bool battleRoyalMode = false)
@@ -102,8 +102,31 @@ namespace ReplayBattleRoyal
                 else playerCount--;
                 LoadingLabel.Content = $"Loading {playersLoaded}/{playerCount}...";
             }
+
+            //Count down if stream mode is activated
+            if (streamMode)
+            {
+                for (var i = 10; i > 0; i--)
+                {
+                    await Task.Delay(1000);
+                    LoadingLabel.Content = $"Starting play in {i}";
+                }
+            }
+
+            //Open effects panel
+            effectsPanel = new EffectsPanel(this, Players);
+            effectsPanel.Show();
+
+            //Show intro
+            var textList = new string[] {
+                $"This video shows {Players.Count} Beat Saber plays at once",
+                $"Every couple seconds a player is eliminated",
+                $"This video contains rapid flashes"
+            };
+            await MediaManager.ShowIntro(this, textList);
+
             LoadingLabel.Visibility = Visibility.Hidden;
-            StartPlay(battleRoyalMode);
+            StartPlay(battleRoyalMode);            
         }
 
         public async void StartPlay(bool battleRoyalMode = false)
@@ -125,10 +148,6 @@ namespace ReplayBattleRoyal
                 tasks.Add(task);
 
             }
-
-            //Open effects panel
-            effectsPanel = new EffectsPanel(this, Players);
-            effectsPanel.Show();
 
             PlaySong(1000);
             if (battleRoyalMode) StartEliminatingPlayers(Players.Count, Convert.ToInt32(Math.Round(Players.First().ReplayModel.Frames.Last().A)));
@@ -169,7 +188,7 @@ namespace ReplayBattleRoyal
         {
             Dispatcher.Invoke(() =>
             {
-                var toRemove = _items.OrderByDescending(x => x.Content.ToString().Split(" ")[0].Trim()).Last();                
+                var toRemove = _items.OrderByDescending(x => x.Content.ToString().Split(" ")[0].Trim()).Last();
                 _items.Remove(toRemove);
                 var playerToRemove = Players.FirstOrDefault(x => toRemove.Content.ToString().Contains(x.Name));
 
@@ -179,7 +198,7 @@ namespace ReplayBattleRoyal
                     CanvasSpace.Children.Remove(playerToRemove.LeftHand);
                     CanvasSpace.Children.Remove(playerToRemove.RightHand);
                     CanvasSpace.Children.Remove(playerToRemove.LeftHandTip);
-                    CanvasSpace.Children.Remove(playerToRemove.RightHandTip);                   
+                    CanvasSpace.Children.Remove(playerToRemove.RightHandTip);
                     foreach (var trail in playerToRemove.TrailListLeft) CanvasSpace.Children.Remove(trail);
                     foreach (var trail in playerToRemove.TrailListRight) CanvasSpace.Children.Remove(trail);
                 } //If player has lead, keep it playing but hidden
@@ -225,7 +244,7 @@ namespace ReplayBattleRoyal
             storedScores.AddRange(player.ReplayModel.Scores.ToArray());
 
             //Add trails for every player 
-            
+
 
             double positionxoldleft = 0;
             double positionyoldleft = 0;
@@ -419,7 +438,7 @@ namespace ReplayBattleRoyal
                         Dispatcher.Invoke(() =>
                         {
                             var item = _items.FirstOrDefault(x => x.Content.ToString().Contains(player.Name));
-                            if(item != null && player.ReplayModel.NoteTime.Count() != 0)
+                            if (item != null && player.ReplayModel.NoteTime.Count() != 0)
                             {
                                 float acc = (float)Math.Round((currentScore * 100) / currentMaxScore, 2);
                                 var combo = player.ReplayModel.Combos.First();
@@ -431,7 +450,7 @@ namespace ReplayBattleRoyal
                                 if (player.ReplayModel.Combos.Count() != 0) item.Content = $"{acc}{spacesa}%    {combo}{spacesc}            {player.Name}";
                                 ListViewPlayers.ItemsSource = _items.OrderByDescending(x => x.Content.ToString().Split(" ")[0].Trim());
                                 ListViewPlayers.Items.Refresh();
-                            }                            
+                            }
                         });
                     }
 
@@ -444,7 +463,7 @@ namespace ReplayBattleRoyal
                 {
 
                     //Set sabertip positions
-                    var tipRight = SaberTipCalculator.RotateSaber(new SaberTipCalculator.Point { x = frame.R.P.X * 2 , y = frame.R.P.Y * 2, z = frame.R.P.Z * 2 }, 2.3, new SaberTipCalculator.Quaternion { x = frame.R.R.X, y = frame.R.R.Y, z = frame.R.R.Z, w = (double)frame.R.R.W });
+                    var tipRight = SaberTipCalculator.RotateSaber(new SaberTipCalculator.Point { x = frame.R.P.X * 2, y = frame.R.P.Y * 2, z = frame.R.P.Z * 2 }, 2.3, new SaberTipCalculator.Quaternion { x = frame.R.R.X, y = frame.R.R.Y, z = frame.R.R.Z, w = (double)frame.R.R.W });
                     var tipLeft = SaberTipCalculator.RotateSaber(new SaberTipCalculator.Point { x = frame.L.P.X * 2, y = frame.L.P.Y * 2, z = frame.L.P.Z * 2 }, 2.3, new SaberTipCalculator.Quaternion { x = frame.L.R.X, y = frame.L.R.Y, z = frame.L.R.Z, w = (double)frame.L.R.W });
 
                     Canvas.SetLeft(player.RightHandTip, tipRight.x * 225 + 625);
@@ -483,6 +502,8 @@ namespace ReplayBattleRoyal
 
                 count++;
             }
+
+            if (hasLead) await Dispatcher.Invoke(async () => { await MediaManager.ShowOutro(this); });
         }
 
         public async void DrawTrail(Player player, double positionxoldleft, double positionyoldleft, double positionxoldright, double positionyoldright, List<Line> trailListLeft, List<Line> trailListRight, int trailIndex)
@@ -505,7 +526,7 @@ namespace ReplayBattleRoyal
             var replayModel = await GetReplayModel($"https://sspreviewdecode.azurewebsites.net/?playerID={playerID}&songID={songID}");
             if (replayModel == null) return false;
             if (replayModel.Frames == null || replayModel.Info.LeftHanded == true) return false;
-            
+
             var color = ColorManager.ColorFromHSV(random.Next(0, 360), random.Next(75, 100) / 100.00, 1);
             var stroke = new SolidColorBrush(color);
             var leftHand = new Ellipse() { Stroke = stroke, Fill = stroke, Width = 25, Height = 25 };
@@ -525,7 +546,7 @@ namespace ReplayBattleRoyal
             //} while (staticFrameCount / avgFps * 50 < replayModel.Frames.Count);
 
             var player = new Player() { ID = playerID, LeftHand = leftHand, RightHand = rightHand, LeftHandTip = leftHandTip, RightHandTip = rightHandTip, ReplayModel = replayModel, Name = playerInfo.Name };
-            var listViewItem = new ListViewItem() { Content = $"0 0           {playerInfo.Name}", Background = player.LeftHand.Stroke , FontSize = 30, FontFamily = new System.Windows.Media.FontFamily("Microsoft YaHei UI") };
+            var listViewItem = new ListViewItem() { Content = $"0 0           {playerInfo.Name}", Background = player.LeftHand.Stroke, FontSize = 30, FontFamily = new System.Windows.Media.FontFamily("Microsoft YaHei UI") };
 
             player.TrailListLeft = new List<Line>();
             player.TrailListRight = new List<Line>();
@@ -586,7 +607,7 @@ namespace ReplayBattleRoyal
                 Canvas.SetBottom(rec, posy);
                 Canvas.SetLeft(recDirection, posxdir);
                 Canvas.SetBottom(recDirection, posydir);
-          
+
                 if (direction == 0) recDirection.RenderTransform = new RotateTransform(180, 42, 35);//up
                 if (direction == 1) recDirection.RenderTransform = new RotateTransform(0, -45, 0); //down 
                 if (direction == 2) recDirection.RenderTransform = new RotateTransform(90, 50, 28); //left 
@@ -625,7 +646,7 @@ namespace ReplayBattleRoyal
                     Canvas.SetLeft(recDirection, posxdir - 5 * i);
                     Canvas.SetBottom(recDirection, posydir - 5 * i);
                 }
-            
+
                 CanvasSpace.Children.Remove(rec);
                 CanvasSpace.Children.Remove(recDirection);
             });
@@ -669,19 +690,20 @@ namespace ReplayBattleRoyal
 
         public async Task PrepareSongFile(string hash)
         {
-            using (var webClient = new WebClient())
+            if (!File.Exists(AppContext.BaseDirectory + @$"Audio\ZipTemp/Download/{hash}.zip"))
             {
-                webClient.Headers.Add("Accept: text/html, application/xhtml+xml, */*");
-                webClient.Headers.Add("User-Agent: Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)");
-                webClient.DownloadFileAsync(new Uri($"https://eu.cdn.beatsaver.com/{hash.ToLower()}.zip"), $@"Audio\ZipTemp/Download/{hash}.zip");
-                do
+                using (var webClient = new WebClient())
                 {
-                    await Task.Delay(100);
-                } while (webClient.IsBusy);
-                webClient.Dispose();
+                    webClient.Headers.Add("Accept: text/html, application/xhtml+xml, */*");
+                    webClient.Headers.Add("User-Agent: Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)");
+                    webClient.DownloadFileAsync(new Uri($"https://eu.cdn.beatsaver.com/{hash.ToLower()}.zip"), $@"Audio\ZipTemp/Download/{hash}.zip");
+                    do
+                    {
+                        await Task.Delay(100);
+                    } while (webClient.IsBusy);
+                    webClient.Dispose();
+                }
             }
-
-
 
             using (ZipArchive archive = ZipFile.OpenRead(AppContext.BaseDirectory + $@"Audio/ZipTemp/Download/{hash}.zip"))
             {
@@ -725,7 +747,7 @@ namespace ReplayBattleRoyal
 
             await Task.Delay(2000);
             File.Delete(AppContext.BaseDirectory + $@"Audio\ZipTemp/Extract/{songID}.egg");
-        }       
+        }
 
         public async Task PlaySong(int delay)
         {

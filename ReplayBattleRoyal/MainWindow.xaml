@@ -12,7 +12,9 @@
             <ColumnDefinition Width="651*"/>
         </Grid.ColumnDefinitions>
         <Grid Background="Black" Margin="300,0,0,0" Grid.ColumnSpan="2">
-            <Canvas x:Name="CanvasSpace" Background="#FF171717" Width="1200" HorizontalAlignment="Center" Height="901"/>
+            <Canvas x:Name="CanvasSpace" Background="#FF171717" Width="1200" HorizontalAlignment="Center" Height="901">
+
+            </Canvas>
         </Grid>
         <Label x:Name="SongNameLabel" Content="Label" HorizontalAlignment="Left" Height="36" Margin="32,0,0,89" VerticalAlignment="Bottom" Width="158" Foreground="White" VerticalContentAlignment="Bottom"/>
         <ListView x:Name="ListViewPlayers" Margin="0,-22,0,157" Background="{x:Null}" VerticalContentAlignment="Stretch" UseLayoutRounding="False" ScrollViewer.VerticalScrollBarVisibility="Hidden" Visibility="Visible" HorizontalAlignment="Left" Width="568" BorderBrush="{x:Null}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" Foreground="#FF040404" FontFamily="Microsoft YaHei UI">
@@ -35,6 +37,5 @@
         <Grid x:Name="TransitionScreen" Grid.ColumnSpan="2" Background="Black" Visibility="Hidden">
             <TextBlock x:Name="TransitionLabel" TextAlignment="Center" Text="" TextWrapping="Wrap" Height="479" Width="1227" Foreground="White" FontSize="120" FontWeight="Bold" FontFamily="Arial Black" Margin="252,234,252,234"/>
         </Grid>
-
     </Grid>
 </Window>

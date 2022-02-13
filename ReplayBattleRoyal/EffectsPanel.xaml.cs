@@ -25,6 +25,10 @@ namespace ReplayBattleRoyal
         private Dictionary<Player, Brush> originalColors = new Dictionary<Player, Brush>();
         private Dictionary<Player, double> originalSize = new Dictionary<Player, double>();
         private int originalTrailSize = 0;
+        private Brush originalNoteColorLeft;
+        private Brush originalNoteColorRight;
+        private Brush originalNoteColorLeftArrow;
+        private Brush originalNoteColorRightArrow;
 
         private MainWindow mainWindow;
 
@@ -42,6 +46,11 @@ namespace ReplayBattleRoyal
             }
             originalTrailSize = Players.First().TrailListLeft.Count;
             currentPlayerList = Players;
+
+            originalNoteColorLeft = mainWindow.NoteColorLeft;
+            originalNoteColorRight = mainWindow.NoteColorRight;
+            originalNoteColorLeftArrow = mainWindow.NoteColorLeftArrow;
+            originalNoteColorRightArrow = mainWindow.NoteColorRightArrow;
         }
 
         private void ClrPcker_Background_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e)
@@ -57,9 +66,14 @@ namespace ReplayBattleRoyal
 
         private void ChangeColorRandom_Click(object sender, RoutedEventArgs e)
         {
-            var random = new Random();
-            var color = new SolidColorBrush(ColorManager.ColorFromHSV(random.Next(0, 360), random.Next(75, 100) / 100.00, 1));
-            ChangeAllColor(color);
+            ChangeAllRandomColor();
+        }
+
+        private void ChangeBlackWhiteButton_Click(object sender, RoutedEventArgs e)
+        {
+            ChangeAllColor(Brushes.White);
+            ChangeNoteColors(Brushes.Black, Brushes.White, Brushes.White, Brushes.Black);
+            ChangeAllLeaderboardColor(Brushes.White);
         }
 
         private void ResetButton_Click(object sender, RoutedEventArgs e)
@@ -69,7 +83,15 @@ namespace ReplayBattleRoyal
                 ChangeColor(player, originalColors.FirstOrDefault(x => x.Key == player).Value);
                 ChangeSize(player, originalSize.FirstOrDefault(x => x.Key == player).Value);
                 SetTrail(player, originalTrailSize);
+
+                var item = mainWindow.listViewItems.FirstOrDefault(x => x.Content.ToString().Contains(player.Name));
+                if(item != null) item.Background = originalColors.FirstOrDefault(x => x.Key == player).Value;
             }
+
+            mainWindow.NoteColorLeft = originalNoteColorLeft;
+            mainWindow.NoteColorRight = originalNoteColorRight;
+            mainWindow.NoteColorLeftArrow = originalNoteColorLeftArrow;
+            mainWindow.NoteColorRightArrow = originalNoteColorRightArrow;
         }
 
         private void MakeEveryoneSmallerButton_Click(object sender, RoutedEventArgs e)
@@ -95,12 +117,40 @@ namespace ReplayBattleRoyal
             foreach (var trail in player.TrailListRight) trail.StrokeThickness = size;
         }
 
+        public void ChangeNoteColors(Brush left, Brush right, Brush leftArrow, Brush rightArrow)
+        {
+            mainWindow.NoteColorLeft = left;
+            mainWindow.NoteColorRight = right;
+            mainWindow.NoteColorLeftArrow = leftArrow;
+            mainWindow.NoteColorRightArrow = rightArrow;
+        }
+
+        public void ChangeAllLeaderboardColor(Brush color)
+        {
+            foreach (var player in currentPlayerList)
+            {
+                ChangeLeaderboardColor(player, Brushes.White);
+            }
+        }
+
+        public void ChangeLeaderboardColor(Player player, Brush color)
+        {
+            var item = mainWindow.listViewItems.FirstOrDefault(x => x.Content.ToString().Contains(player.Name));
+            if(item != null) item.Background = color;
+        }
+
         private void ChangeAllColor(Brush color)
         {
             if (color == null) return;
             foreach (var player in currentPlayerList) ChangeColor(player, color);
         }
 
+        public void ChangeAllRandomColor()
+        {
+            var random = new Random();
+            var color = new SolidColorBrush(ColorManager.ColorFromHSV(random.Next(0, 360), random.Next(75, 100) / 100.00, 1));
+            ChangeAllColor(color);
+        }
         private void ChangeColor(Player player, Brush color)
         {
             if (color == null) return;

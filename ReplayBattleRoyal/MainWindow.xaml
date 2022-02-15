@@ -5,16 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ReplayBattleRoyal"
         mc:Ignorable="d"
-        Title="MainWindow" Height="963" Width="1730" WindowStartupLocation="CenterScreen" WindowState="Normal">
-    <Grid x:Name="MainGrid" Background="Black">
+        Title="MainWindow" Height="963" Width="1730" WindowStartupLocation="CenterScreen" WindowState="Normal" Background="Black">
+    <Grid x:Name="MainGrid">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="656*"/>
-            <ColumnDefinition Width="651*"/>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <Grid Background="Black" Margin="300,0,0,0" Grid.ColumnSpan="2">
-            <Canvas x:Name="CanvasSpace" Background="#FF171717" Width="1200" HorizontalAlignment="Center" Height="901">
-
-            </Canvas>
+        <Grid Margin="300,0,0,0" Grid.ColumnSpan="2">
+            <Canvas x:Name="CanvasSpace" Width="1200" HorizontalAlignment="Center" Height="901"/>
         </Grid>
         <Label x:Name="SongNameLabel" Content="Label" HorizontalAlignment="Left" Height="36" Margin="32,0,0,89" VerticalAlignment="Bottom" Width="158" Foreground="White" VerticalContentAlignment="Bottom"/>
         <ListView x:Name="ListViewPlayers" Margin="0,-22,0,157" Background="{x:Null}" VerticalContentAlignment="Stretch" UseLayoutRounding="False" ScrollViewer.VerticalScrollBarVisibility="Hidden" Visibility="Visible" HorizontalAlignment="Left" Width="568" BorderBrush="{x:Null}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" Foreground="#FF040404" FontFamily="Microsoft YaHei UI">

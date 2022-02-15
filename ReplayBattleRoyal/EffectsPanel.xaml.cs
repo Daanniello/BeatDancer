@@ -258,5 +258,20 @@ namespace ReplayBattleRoyal
                     player.TrailListRight.Remove(player.TrailListRight.Last());
                 }
         }
+
+        private void ActivateLightshowButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (mainWindow.lightshowIsActivated) mainWindow.lightshowIsActivated = false;
+            else mainWindow.lightshowIsActivated = true;
+        }
+
+        private void HighlightRandomPersonButton_Click(object sender, RoutedEventArgs e)
+        {
+            ChangeAllColor(Brushes.White);
+            var randomPlayer = mainWindow.Players[new Random().Next(0, mainWindow.Players.Count)];
+            ChangeColor(randomPlayer, randomPlayer.LeftHand.Stroke);
+            ChangeAllLeaderboardColor(Brushes.White);
+            ChangeLeaderboardColor(randomPlayer, randomPlayer.LeftHand.Stroke);
+        }
     }
 }

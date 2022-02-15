@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Media;
 
 namespace ReplayBattleRoyal.Managers
 {
@@ -34,6 +35,25 @@ namespace ReplayBattleRoyal.Managers
                 color = System.Drawing.Color.FromArgb(255, v, p, q);
 
             return System.Windows.Media.Color.FromArgb(color.A, color.R, color.G, color.B);
+        }
+
+        public static HSVColor ColorToHSV(System.Drawing.Color color)
+        {
+            int max = Math.Max(color.R, Math.Max(color.G, color.B));
+            int min = Math.Min(color.R, Math.Min(color.G, color.B));
+
+            var hue = color.GetHue();
+            var saturation = (max == 0) ? 0 : 1d - (1d * min / max);
+            var value = max / 255d;
+
+            return new HSVColor() { Hue = hue, Saturation = saturation, Value = value };
+        }
+
+        public struct HSVColor
+        {
+            public double Hue;
+            public double Saturation;
+            public double Value;
         }
     }
 }

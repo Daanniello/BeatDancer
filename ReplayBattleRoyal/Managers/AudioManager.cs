@@ -19,26 +19,38 @@ namespace ReplayBattleRoyal
 
         public static async void PlayHitSound()
         {
-            var soundPlayerHitsound = new MediaPlayer();
-            soundPlayerHitsound.Open(new Uri(AppContext.BaseDirectory + $@"Audio\SoundEffect\HitSound.wav"));
-            soundPlayerHitsound.Play();            
+            await Task.Factory.StartNew(() =>
+            {
+                var soundPlayerHitsound = new MediaPlayer();
+                soundPlayerHitsound.Open(new Uri(AppContext.BaseDirectory + $@"Audio\SoundEffect\HitSound.wav"));
+                soundPlayerHitsound.Play();
+            });
         }
 
         public async static Task PlayHitSounds(List<double> noteTimings)
         {
 
-
             var count = 0;
+            await Task.Delay((int)(noteTimings[0] * 1000));
             foreach (var time in noteTimings)
             {
-                var soundPlayerHitsound = new MediaPlayer();
-                soundPlayerHitsound.Open(new Uri(AppContext.BaseDirectory + $@"Audio\SoundEffect\HitSound.wav"));
-                await Task.Delay(TimeSpan.FromMilliseconds((noteTimings[count + 1] - time) * 1000));
-                soundPlayerHitsound.Play();
 
+                var waitTime = (noteTimings[count + 1] - time) * 1000;
                 count++;
+                if (waitTime < 0) continue;
+                await Task.Delay(TimeSpan.FromMilliseconds(waitTime));
+
+
+                await Task.Factory.StartNew(() =>
+                {
+                    var soundPlayerHitsound = new MediaPlayer();
+                    soundPlayerHitsound.Open(new Uri(AppContext.BaseDirectory + $@"Audio\SoundEffect\HitSound.wav"));
+                    soundPlayerHitsound.Play();
+                });
+
+                
             }
         }
-      
+
     }
 }

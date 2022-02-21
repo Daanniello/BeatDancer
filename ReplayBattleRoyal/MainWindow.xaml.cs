@@ -44,9 +44,9 @@ namespace ReplayBattleRoyal
         private Bitmap originalImage;
         private ImageBrush backgroundBrush;
         private ColorManager.HSVColor[,] originalPixels;
-        private List<ImageBrush> lightEventBackgrounds = new List<ImageBrush>();
+        private List<Grid> lightEventBackgrounds = new List<Grid>();
 
-        private double _speedFactor = 12;
+        private double _speedFactor = 11;
 
         public bool streamMode = false;
         public GameModes gameMode = GameModes.None;
@@ -69,11 +69,13 @@ namespace ReplayBattleRoyal
             InitializeComponent();
 
             _scoresaberClient = new ScoreSaberClient();
-            //387215 7.5
-            Start(286379, 100, country: null, streamMode: false, GameModes.BattleRoyale);
+
+            //84701
+            //92172
+            Start(407698, 5, country: null, streamMode: false, GameModes.None, useBackgroundVideo: true);
         }
 
-        public async Task Start(int songID, int playerAmount = 1, string country = null, bool streamMode = false, GameModes gameMode = GameModes.None)
+        public async Task Start(int songID, int playerAmount = 1, string country = null, bool streamMode = false, GameModes gameMode = GameModes.None, bool useBackgroundVideo = false)
         {
             this.streamMode = streamMode;
             this.gameMode = gameMode;
@@ -122,7 +124,7 @@ namespace ReplayBattleRoyal
             gridView.Columns.First().Width = 550;
 
             LoadingLabel.Content = $"Loading... preparing song file";
-            await PrepareSongFile(hashCode);
+            await PrepareSongFile(hashCode, useBackgroundVideo);
 
             //Load in all players 
             LoadingLabel.Content = $"Loading... start loading players";
@@ -130,27 +132,22 @@ namespace ReplayBattleRoyal
             var playerCount = playerAmount;
             var playersLoaded = 0;
 
-            //for (var i = 0; i < playerAmount; i++)
-            //{
-            //    if (await LoadInPlayer($"{leaderboardScores[i].LeaderboardPlayerInfo.Id}")) playersLoaded++;
-            //    else playerCount--;
-            //    LoadingLabel.Content = $"Loading {playersLoaded}/{playerCount}...";
-            //}
-
             //Parallel loading
             var secureLead = 3;
             var tasks = new List<Task>();
             for (var i = 0; i < playerAmount; i++)
             {
+                var color = ColorManager.ColorFromHSV(360 / playerAmount * i, random.Next(75, 100) / 100.00, 1);
+
                 if (i < secureLead)
                 {
-                    if (!await LoadInPlayer($"{leaderboardScores[i].LeaderboardPlayerInfo.Id}")) secureLead++;
+                    if (!await LoadInPlayer($"{leaderboardScores[i].LeaderboardPlayerInfo.Id}", color)) secureLead++;
                 }
                 else
                 {
                     tasks.Add(Task.Run(async () =>
                     {
-                        var isFinishedCorrectly = await LoadInPlayer($"{leaderboardScores[i].LeaderboardPlayerInfo.Id}");
+                        var isFinishedCorrectly = await LoadInPlayer($"{leaderboardScores[i].LeaderboardPlayerInfo.Id}", color);
                         if (isFinishedCorrectly) playersLoaded++;
                         else playerCount--;
 
@@ -160,6 +157,7 @@ namespace ReplayBattleRoyal
                 await Task.Delay(300);
             }
             await Task.WhenAll(tasks);
+
 
             //Count down if stream mode is activated
             if (streamMode)
@@ -176,13 +174,17 @@ namespace ReplayBattleRoyal
             effectsPanel.Show();
 
             //Show intro
-            var textList = new string[] {
+            var textBattleRoyale = new string[] {
                 $"This video shows {Players.Count} Beat Saber plays at once",
                 $"Every couple seconds a player is eliminated",
                 $"This video contains rapid flashes"
             };
+            var textNormal = new string[] {
+                $"This video shows {Players.Count} Beat Saber plays at once",
+                $"This video contains rapid flashes"
+            };
 
-            if (streamMode) await MediaManager.ShowIntro(this, textList);
+            if (streamMode) await MediaManager.ShowIntro(this, textNormal);
 
             LoadingLabel.Visibility = Visibility.Hidden;
             StartPlay();
@@ -209,6 +211,7 @@ namespace ReplayBattleRoyal
             }
 
             PlaySong(1000);
+
             if (gameMode == GameModes.BattleRoyale) StartEliminatingPlayers(Players.Count, Convert.ToInt32(Math.Round(Players.First().ReplayModel.Frames.Last().A)));
             Task.WaitAll(tasks.ToArray());
         }
@@ -239,25 +242,16 @@ namespace ReplayBattleRoyal
                 listViewItems.Remove(toRemove);
                 var playerToRemove = Players.FirstOrDefault(x => toRemove.Content.ToString().Contains(x.Name));
 
-                if (!playerToRemove.hasLead)
-                {
-                    Players.Remove(playerToRemove);
-                    CanvasSpace.Children.Remove(playerToRemove.LeftHand);
-                    CanvasSpace.Children.Remove(playerToRemove.RightHand);
-                    CanvasSpace.Children.Remove(playerToRemove.LeftHandTip);
-                    CanvasSpace.Children.Remove(playerToRemove.RightHandTip);
-                    foreach (var trail in playerToRemove.TrailListLeft) CanvasSpace.Children.Remove(trail);
-                    foreach (var trail in playerToRemove.TrailListRight) CanvasSpace.Children.Remove(trail);
-                } //If player has lead, keep it playing but hidden
-                else
-                {
-                    CanvasSpace.Children.Remove(playerToRemove.LeftHand);
-                    CanvasSpace.Children.Remove(playerToRemove.RightHand);
-                    CanvasSpace.Children.Remove(playerToRemove.LeftHandTip);
-                    CanvasSpace.Children.Remove(playerToRemove.RightHandTip);
-                    foreach (var trail in playerToRemove.TrailListLeft) CanvasSpace.Children.Remove(trail);
-                    foreach (var trail in playerToRemove.TrailListRight) CanvasSpace.Children.Remove(trail);
-                }
+                if (!playerToRemove.hasLead) Players.Remove(playerToRemove);
+
+                CanvasSpace.Children.Remove(playerToRemove.LeftHand);
+                CanvasSpace.Children.Remove(playerToRemove.RightHand);
+                CanvasSpace.Children.Remove(playerToRemove.LeftHandTip);
+                CanvasSpace.Children.Remove(playerToRemove.RightHandTip);
+                CanvasSpace.Children.Remove(playerToRemove.Head);
+                foreach (var trail in playerToRemove.TrailListLeft) CanvasSpace.Children.Remove(trail);
+                foreach (var trail in playerToRemove.TrailListRight) CanvasSpace.Children.Remove(trail);
+
                 ListViewPlayers.Items.Refresh();
             });
         }
@@ -276,6 +270,17 @@ namespace ReplayBattleRoyal
             //await Task.Delay(TimeSpan.FromSeconds(player.ReplayModel.NoteTime.First()));
             await Task.Delay(1000);
 
+            //Play Background video if one has been set
+            if (hasLead)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    if (BackgroundVideo.Source != null)
+                    {
+                        BackgroundVideo.Play();
+                    }
+                });
+            };
 
             var avgFps = player.ReplayModel.Frames.Average(x => x.I);
 
@@ -324,6 +329,8 @@ namespace ReplayBattleRoyal
                     var noteTime = player.ReplayModel.NoteTime.First();
                     if (noteTime < frame.A)
                     {
+                        if (player.ReplayModel.NoteInfos.Count == 0) continue;
+
                         if (hasLead && lightshowIsActivated)
                         {
                             ////Check if a lightin event happens
@@ -331,22 +338,24 @@ namespace ReplayBattleRoyal
                             if (lightdata.Time < frame.A)
                             {
                                 //Might not be good to do 12 and 13 away
-                                if(lightdata.Type != 12 || lightdata.Type != 13)
+                                if (true/*lightdata.Type != 12 || lightdata.Type != 13 || lightdata.Type != 8*/)
                                 {
                                     Task.Run(async () =>
                                     {
                                         Dispatcher.Invoke(() =>
                                         {
-                                            MainGrid.Background = lightEventBackgrounds[(int)lightdata.Type];
+                                            lightEventBackgrounds[(int)lightdata.Type].Visibility = Visibility.Visible;
+                                            //lightEventBackgrounds[(int)lightdata.Type].Opacity = lightdata.Value == 0 ? (double)0.1 : 1 / (double)lightdata.Value;
                                         });
                                         await Task.Delay(100);
                                         Dispatcher.Invoke(() =>
                                         {
-                                            MainGrid.Background = backgroundBrush;
+                                            lightEventBackgrounds[(int)lightdata.Type].Visibility = Visibility.Hidden;
+                                            //lightEventBackgrounds[(int)lightdata.Type].Opacity = 0.1;
                                         });
                                     });
                                 }
-                               
+
                                 storedLightshowData.Remove(lightdata);
                             }
                         }
@@ -430,7 +439,11 @@ namespace ReplayBattleRoyal
                         storedScores.Remove(storedScores.First());
 
                         var note = player.ReplayModel.NoteInfos.First();
-                        if (hasLead) AddNote(note);
+                        if (hasLead)
+                        {
+                            AddNote(note);
+                            AudioManager.PlayHitSound();
+                        }
                         player.ReplayModel.NoteInfos.Remove(note);
                         player.ReplayModel.NoteTime.Remove(noteTime);
 
@@ -449,10 +462,13 @@ namespace ReplayBattleRoyal
                             Dispatcher.Invoke(async () =>
                             {
                                 var item = listViewItems.FirstOrDefault(x => x.Content.ToString().Contains(player.Name));
-                                item.BorderBrush = System.Windows.Media.Brushes.Red;
-                                item.BorderThickness = new Thickness(5);
-                                await Task.Delay(1000);
-                                item.BorderBrush = player.LeftHand.Stroke;
+                                if (item != null)
+                                {
+                                    item.BorderBrush = System.Windows.Media.Brushes.Red;
+                                    item.BorderThickness = new Thickness(5);
+                                    await Task.Delay(1000);
+                                    item.BorderBrush = player.LeftHand.Stroke;
+                                }
                             });
                         }
                     }
@@ -539,8 +555,8 @@ namespace ReplayBattleRoyal
                 {
 
                     //Set sabertip positions
-                    var tipRight = SaberTipCalculator.RotateSaber(new SaberTipCalculator.Point { x = frame.R.P.X * 2, y = frame.R.P.Y * 2, z = frame.R.P.Z * 2 }, 2.3, new SaberTipCalculator.Quaternion { x = frame.R.R.X, y = frame.R.R.Y, z = frame.R.R.Z, w = (double)frame.R.R.W });
-                    var tipLeft = SaberTipCalculator.RotateSaber(new SaberTipCalculator.Point { x = frame.L.P.X * 2, y = frame.L.P.Y * 2, z = frame.L.P.Z * 2 }, 2.3, new SaberTipCalculator.Quaternion { x = frame.L.R.X, y = frame.L.R.Y, z = frame.L.R.Z, w = (double)frame.L.R.W });
+                    var tipRight = QuaternionCalculator.RotateSaber(new QuaternionCalculator.Point { x = frame.R.P.X * 2, y = frame.R.P.Y * 2, z = frame.R.P.Z * 2 }, 2.3, new QuaternionCalculator.Quaternion { x = frame.R.R.X, y = frame.R.R.Y, z = frame.R.R.Z, w = (double)frame.R.R.W });
+                    var tipLeft = QuaternionCalculator.RotateSaber(new QuaternionCalculator.Point { x = frame.L.P.X * 2, y = frame.L.P.Y * 2, z = frame.L.P.Z * 2 }, 2.3, new QuaternionCalculator.Quaternion { x = frame.L.R.X, y = frame.L.R.Y, z = frame.L.R.Z, w = (double)frame.L.R.W });
 
                     Canvas.SetLeft(player.RightHandTip, tipRight.x * 225 + 625);
                     Canvas.SetBottom(player.RightHandTip, tipRight.y * 225 - 100);
@@ -558,6 +574,19 @@ namespace ReplayBattleRoyal
                     Canvas.SetBottom(player.RightHand, centerHeight + offsetHeight + (frame.R.P.Y + (1.7 - player.ReplayModel.Info.Height))/*Removes height differences*/ * zoomy);
                     if (hasLead) TimeLabelLead.Content = frame.A;
                     else TimeLabel.Content = frame.A;
+
+                    //Set head Positions
+                    Canvas.SetLeft(player.Head, centerWidth + frame.H.P.X * zoomx);
+                    Canvas.SetBottom(player.Head, centerHeight + offsetHeight + (frame.H.P.Y + (1.7 - player.ReplayModel.Info.Height))/*Removes height differences*/ * zoomy + 200);
+                    //TODO: Set head Rotation
+                    //var w = Math.Acos((double)frame.H.R.W) * 2;
+                    //var ax = (double)frame.H.R.X / Math.Sin(Math.Acos(w));
+                    //var ay = (double)frame.H.R.Y / Math.Sqrt(1 - w * w);
+                    //var az = (double)frame.H.R.Z / Math.Sin(Math.Acos(w));                    
+
+                    //var euler = QuaternionCalculator.ToEulerAngles(new QuaternionCalculator.Quaternion() { x = frame.H.R.X, y = frame.H.R.Y, z = frame.H.R.Z, w = (double)frame.H.R.W });
+                    player.Head.RenderTransform = new RotateTransform(frame.H.R.Z * 90, player.Head.Width / 2, player.Head.Height / 2);
+
 
 
                     //Give positions to each trail
@@ -596,29 +625,31 @@ namespace ReplayBattleRoyal
             trailListRight[trailIndex].Y2 = CanvasSpace.Height - player.RightHandTip.Height / 2 - Canvas.GetBottom(player.RightHandTip);
         }
 
-        public async Task<bool> LoadInPlayer(string playerID)
+        public async Task<bool> LoadInPlayer(string playerID, System.Windows.Media.Color color)
         {
             var playerInfo = await _scoresaberClient.Api.Players.GetPlayer(Convert.ToInt64(playerID));
             var replayModel = await GetReplayModel($"https://sspreviewdecode.azurewebsites.net/?playerID={playerID}&songID={songID}");
 
             if (replayModel == null || playerInfo == null) return false;
-            if (replayModel.Frames == null || replayModel.Info.LeftHanded == true) return false; //TODO: include left hand mode
+            if (replayModel.Frames == null /*|| replayModel.Info.LeftHanded == true*/) return false; //TODO: include left hand mode
 
             await Dispatcher.Invoke(async () =>
             {
 
-                var color = ColorManager.ColorFromHSV(random.Next(0, 360), random.Next(75, 100) / 100.00, 1);
+
                 var stroke = new SolidColorBrush(color);
                 var leftHand = new Ellipse() { Stroke = stroke, Fill = stroke, Width = 25, Height = 25 };
                 var rightHand = new Ellipse() { Stroke = stroke, Fill = stroke, Width = 25, Height = 25 };
                 var leftHandTip = new Ellipse() { Stroke = stroke, Fill = stroke, Width = 15, Height = 15 };
                 var rightHandTip = new Ellipse() { Stroke = stroke, Fill = stroke, Width = 15, Height = 15 };
+                var head = new System.Windows.Shapes.Rectangle() { Stroke = stroke, StrokeThickness = 4, Width = 50, Height = 25, RadiusX = 2, RadiusY = 2 };
                 CanvasSpace.Children.Add(leftHand);
                 CanvasSpace.Children.Add(rightHand);
+                CanvasSpace.Children.Add(head);
                 //CanvasSpace.Children.Add(leftHandTip);
                 //CanvasSpace.Children.Add(rightHandTip);
 
-                var player = new Player() { ID = playerID, LeftHand = leftHand, RightHand = rightHand, LeftHandTip = leftHandTip, RightHandTip = rightHandTip, ReplayModel = replayModel, Name = playerInfo.Name, color = color };
+                var player = new Player() { ID = playerID, LeftHand = leftHand, RightHand = rightHand, LeftHandTip = leftHandTip, RightHandTip = rightHandTip, ReplayModel = replayModel, Name = playerInfo.Name, color = color, Head = head };
                 var listViewItem = new ListViewItem() { Content = $"0 0           {playerInfo.Name}", Background = player.LeftHand.Stroke, FontSize = 30, FontFamily = new System.Windows.Media.FontFamily("Microsoft YaHei UI") };
 
                 player.TrailListLeft = new List<Line>();
@@ -741,6 +772,7 @@ namespace ReplayBattleRoyal
             public System.Windows.Media.Color color { get; set; }
 
             public bool hasLead { get; set; }
+            public System.Windows.Shapes.Rectangle Head { get; set; }
             public Ellipse LeftHand { get; set; }
 
             public Ellipse RightHand { get; set; }
@@ -778,7 +810,7 @@ namespace ReplayBattleRoyal
             return mapDetails;
         }
 
-        public async Task PrepareSongFile(string hash)
+        public async Task PrepareSongFile(string hash, bool useBackgroundVideo = false)
         {
             if (!File.Exists(AppContext.BaseDirectory + @$"Audio\ZipTemp/Download/{hash}.zip"))
             {
@@ -827,70 +859,119 @@ namespace ReplayBattleRoyal
                 options.WithAudioCodec(audioCodec: AudioCodec.LibMp3Lame))
                 .ProcessSynchronously();
 
-            if (File.Exists(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{songID}.jpg"))
+            if (useBackgroundVideo)
             {
-                backgroundBrush = new ImageBrush();
-                var bitmap = new Bitmap(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{songID}.jpg");
-                originalImage = bitmap;
-                backgroundImageBitmap = MediaManager.GrayScaleFilter(bitmap);
-
-
-                //Set main background
-                var imageSource = MediaManager.BitmapToImageSource(backgroundImageBitmap);
-                backgroundBrush.ImageSource = imageSource;
-                //0.04
-                backgroundBrush.Opacity = 0.06;
-                MainGrid.Background = backgroundBrush;
-
-                //Set original pixels
-                originalPixels = new ColorManager.HSVColor[originalImage.Width, originalImage.Height];
-                for (var y = 0; y < originalImage.Height; y++)
+                if (File.Exists(AppContext.BaseDirectory + $@"Audio/Video/{songID}.mp4"))
                 {
-                    for (var x = 0; x < originalImage.Width; x++)
-                    {
-                        originalPixels[x, y] = ColorManager.ColorToHSV(originalImage.GetPixel(x, y));
-                    }
-                }
-
-                //Add different types of background images to lightshow list
-                var amount = 14;
-                var offset = 360 / amount;
-                var minSat = 0.1;
-                var minVal = 0.1;
-                for (var i = 0; i < amount; i++)
-                {
-                    var piece = 360 / amount;
-                    var share = 360 / amount * i;
-
-                    var bmGrayScale = (Bitmap)backgroundImageBitmap.Clone();
-                    var randomRange = random.Next(0, 360);
-
-                    for (var y = 0; y < bmGrayScale.Height; y++)
-                    {
-                        for (var x = 0; x < bmGrayScale.Width; x++)
-                        {
-                            var hue = originalPixels[x, y].Hue;
-                            var sat = originalPixels[x, y].Saturation;
-                            var val = originalPixels[x, y].Value;
-
-                            if (hue > share - (piece / 2) - offset && hue < share + (piece / 2) + offset && sat > minSat && val > minVal)
-                            {
-                                var mediaColor = ColorManager.ColorFromHSV(share, 1, 1);
-                                bmGrayScale.SetPixel(x, y, System.Drawing.Color.FromArgb(mediaColor.R, mediaColor.G, mediaColor.B));
-                            }
-                            else
-                            {
-                                var pix = bmGrayScale.GetPixel(x, y);
-                                bmGrayScale.SetPixel(x, y, System.Drawing.Color.FromArgb(255, pix.R / 10, pix.G / 10, pix.B / 10));
-                            }
-                        }
-                    }
-                    lightEventBackgrounds.Add(new ImageBrush() { ImageSource = MediaManager.BitmapToImageSource(bmGrayScale), Opacity = 0.5 });
+                    BackgroundVideo.Source = new Uri(GlobalConfig.BasePath + "/Resources/Vids/" + $"{songID}.mp4");
+                    BackgroundVideo.Stretch = Stretch.Fill;
+                    BackgroundVideo.Opacity = 0.1;
+                    BackgroundVideo.Volume = 0;
                 }
             }
             else
             {
-                CanvasSpace.Background = System.Windows.Media.Brushes.Black;
+                if (File.Exists(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{songID}.jpg"))
+                {
+                    backgroundBrush = new ImageBrush();
+                    var bitmap = new Bitmap(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{songID}.jpg");
+                    originalImage = bitmap;
+                    backgroundImageBitmap = MediaManager.GrayScaleFilter(bitmap);
+
+
+                    //Set main background
+                    var imageSource = MediaManager.BitmapToImageSource(backgroundImageBitmap);
+                    backgroundBrush.ImageSource = imageSource;
+                    //0.04
+                    backgroundBrush.Opacity = 0.06;
+                    MainGrid.Background = backgroundBrush;
+
+                    //Set original pixels
+                    originalPixels = new ColorManager.HSVColor[originalImage.Width, originalImage.Height];
+                    for (var y = 0; y < originalImage.Height; y++)
+                    {
+                        for (var x = 0; x < originalImage.Width; x++)
+                        {
+                            var color = originalImage.GetPixel(x, y);
+                            //Testing-------------
+                            //var color2 = System.Drawing.Color.FromArgb(0, 0, 0);
+                            //var color3 = System.Drawing.Color.FromArgb(0, 0, 0);
+                            //if (x - 1 > 0 && y - 1 > 0) color2 = originalImage.GetPixel(x - 1, y - 1);
+                            //if (x - 2 > 0 && y - 2 > 0) color3 = originalImage.GetPixel(x - 2, y - 2);
+
+                            //var newColor = System.Drawing.Color.FromArgb(
+                            //    color.R / 3 + color2.R / 3 + color3.R / 3,
+                            //    color.G / 3 + color2.G / 3 + color3.G / 3,
+                            //    color.B / 3 + color2.B / 3 + color3.B / 3
+                            //    );
+
+                            //-----------------------
+                            var hsv = ColorManager.ColorToHSV(color);
+                            originalPixels[x, y] = hsv;
+                        }
+                    }
+
+                    //Add different types of background images to lightshow list
+                    var amount = 14;
+                    var offset = 360 / amount;
+                    for (var i = 0; i < amount; i++)
+                    {
+                        double minSat = 0.05;
+                        double minVal = 0.05;
+                        double maxSat = 1;
+                        double maxVal = 1;
+
+                        var piece = 360 / amount;
+                        var share = 360 / amount * i;
+
+                        var bmGrayScale = (Bitmap)backgroundImageBitmap.Clone();
+                        var randomRange = random.Next(0, 360);
+
+                        var coloredPixelCount = 0;
+                        for (var y = 0; y < bmGrayScale.Height; y++)
+                        {
+                            for (var x = 0; x < bmGrayScale.Width; x++)
+                            {
+                                var hue = originalPixels[x, y].Hue;
+                                var sat = originalPixels[x, y].Saturation;
+                                var val = originalPixels[x, y].Value;
+                                if (hue > share - (piece / 2) - offset && hue < share + (piece / 2) + offset && sat > minSat && val > minVal && val < maxVal && sat < maxSat) coloredPixelCount++;
+                            }
+                        }
+
+                        maxSat = 1 - ((coloredPixelCount * (maxSat * 1)) / (bmGrayScale.Height * bmGrayScale.Width));
+                        maxVal = 1 - ((coloredPixelCount * (maxVal * 1)) / (bmGrayScale.Height * bmGrayScale.Width));
+
+                        for (var y = 0; y < bmGrayScale.Height; y++)
+                        {
+                            for (var x = 0; x < bmGrayScale.Width; x++)
+                            {
+                                var hue = originalPixels[x, y].Hue;
+                                var sat = originalPixels[x, y].Saturation;
+                                var val = originalPixels[x, y].Value;
+
+                                if (hue > share - (piece / 2) - offset && hue < share + (piece / 2) + offset && sat > minSat && val > minVal && val < maxVal && sat < maxSat)
+                                {
+                                    var mediaColor = ColorManager.ColorFromHSV(share, 1, 1);
+                                    bmGrayScale.SetPixel(x, y, System.Drawing.Color.FromArgb(mediaColor.R, mediaColor.G, mediaColor.B));
+                                }
+                                else
+                                {
+                                    var pix = bmGrayScale.GetPixel(x, y);
+                                    bmGrayScale.SetPixel(x, y, System.Drawing.Color.Transparent);
+                                }
+                            }
+                        }
+                        var background = new ImageBrush() { ImageSource = MediaManager.ToBitmapImage(bmGrayScale) };
+                        var grid = new Grid() { Background = background, Visibility = Visibility.Hidden, Opacity = 0.1 };
+                        LightshowOverlayGrid.Children.Add(grid);
+                        lightEventBackgrounds.Add(grid);
+                    }
+                }
+                else
+                {
+                    CanvasSpace.Background = System.Windows.Media.Brushes.Black;
+                }
             }
 
             mapDetails = GetMapDetailsModel();
@@ -905,6 +986,7 @@ namespace ReplayBattleRoyal
             mediaPlayer.Open(new Uri(AppContext.BaseDirectory + $@"Audio\{songID}.mp3"));
             await Task.Delay(delay);
             mediaPlayer.Play();
+
 
             //var noteTimings = new List<double>();
             //foreach (var time in Players.First().ReplayModel.NoteTime) noteTimings.Add(time);

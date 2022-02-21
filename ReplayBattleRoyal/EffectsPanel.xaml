@@ -6,18 +6,19 @@
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         xmlns:local="clr-namespace:ReplayBattleRoyal"
         mc:Ignorable="d"
-        Title="EffectsPanel" Height="450" Width="427">
+        Title="EffectsPanel" Height="584" Width="427">
     <Grid Background="#FF383838">
         <Button x:Name="ChangeAllPlayersColorsButton" Content="Change all player colors" HorizontalAlignment="Left" Height="32" Margin="10,68,0,0" VerticalAlignment="Top" Width="158" Click="ChangeAllPlayersColorsButton_Click"/>
         <xctk:ColorPicker Name="ClrPcker_Background" SelectedColorChanged="ClrPcker_Background_SelectedColorChanged" Margin="173,68,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Width="244" Height="32"></xctk:ColorPicker>
         <Button x:Name="ResetButton" Content="Reset" HorizontalAlignment="Left" Height="32" Margin="329,10,0,0" VerticalAlignment="Top" Width="88" Click="ResetButton_Click"/>
         <Button x:Name="ChangeColorRandom" Content="Change color randomly" HorizontalAlignment="Center" Height="32" Margin="0,117,0,0" VerticalAlignment="Top" Width="407" Click="ChangeColorRandom_Click"/>
-        <Button x:Name="MakeEveryoneSmallerButton" Content="Make all smaller" HorizontalAlignment="Left" Height="32" Margin="10,314,0,0" VerticalAlignment="Top" Width="197" Click="MakeEveryoneSmallerButton_Click"/>
-        <Button x:Name="MakeEveryoneBiggerButton" Content="Make all bigger" HorizontalAlignment="Left" Height="32" Margin="217,314,0,0" VerticalAlignment="Top" Width="200" Click="MakeEveryoneBiggerButton_Click"/>
-        <Button x:Name="MakeEveryonesTrailSmallerButton" Content="Make all trail smaller" HorizontalAlignment="Left" Height="32" Margin="10,364,0,0" VerticalAlignment="Top" Width="197" Click="MakeEveryonesTrailSmallerButton_Click"/>
-        <Button x:Name="MakeEveryonesTrailBiggerButton" Content="Make all trail bigger" HorizontalAlignment="Left" Height="32" Margin="217,364,0,0" VerticalAlignment="Top" Width="200" Click="MakeEveryonesTrailBiggerButton_Click"/>
+        <Button x:Name="MakeEveryoneSmallerButton" Content="Make all smaller" HorizontalAlignment="Left" Height="32" Margin="10,476,0,0" VerticalAlignment="Top" Width="197" Click="MakeEveryoneSmallerButton_Click"/>
+        <Button x:Name="MakeEveryoneBiggerButton" Content="Make all bigger" HorizontalAlignment="Left" Height="32" Margin="217,476,0,0" VerticalAlignment="Top" Width="200" Click="MakeEveryoneBiggerButton_Click"/>
+        <Button x:Name="MakeEveryonesTrailSmallerButton" Content="Make all trail smaller" HorizontalAlignment="Left" Height="32" Margin="10,526,0,0" VerticalAlignment="Top" Width="197" Click="MakeEveryonesTrailSmallerButton_Click"/>
+        <Button x:Name="MakeEveryonesTrailBiggerButton" Content="Make all trail bigger" HorizontalAlignment="Left" Height="32" Margin="217,526,0,0" VerticalAlignment="Top" Width="200" Click="MakeEveryonesTrailBiggerButton_Click"/>
         <Button x:Name="ChangeBlackWhiteButton" Content="Change to black and white" HorizontalAlignment="Center" Height="32" Margin="0,167,0,0" VerticalAlignment="Top" Width="407" Click="ChangeBlackWhiteButton_Click"/>
         <Button x:Name="ActivateLightshowButton" Content="Toggle Lightshow" HorizontalAlignment="Center" Height="32" Margin="0,217,0,0" VerticalAlignment="Top" Width="407" Click="ActivateLightshowButton_Click"/>
         <Button x:Name="HighlightRandomPersonButton" Content="Highlight random person" HorizontalAlignment="Center" Height="32" Margin="0,266,0,0" VerticalAlignment="Top" Width="407" Click="HighlightRandomPersonButton_Click"/>
+        <Button x:Name="TestButton" Content="Test Button" HorizontalAlignment="Center" Height="32" Margin="0,399,0,0" VerticalAlignment="Top" Width="407" Click="TestButton_Click"/>
     </Grid>
 </Window>

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -54,7 +55,17 @@ namespace ReplayBattleRoyal.Managers
             foreach (var text in textList)
             {
                 mainWindow.TransitionLabel.Text = text;
+                if(text == textList[textList.Length - 1])
+                {
+                    mainWindow.warningLeft.Visibility = Visibility.Visible;
+                    mainWindow.warningRight.Visibility = Visibility.Visible;
+                }
                 await Task.Delay(4000);
+                if (text == textList[textList.Length - 1])
+                {
+                    mainWindow.warningLeft.Visibility = Visibility.Hidden;
+                    mainWindow.warningRight.Visibility = Visibility.Hidden;
+                }
             }
 
             for (var i = 0; i < 100; i++)
@@ -86,6 +97,25 @@ namespace ReplayBattleRoyal.Managers
                     mainWindow.TransitionLabel.Text = text;
                     await Task.Delay(4000);
                 }
+            }
+        }
+
+        public static BitmapImage ToBitmapImage(Bitmap bitmap)
+        {
+            using (MemoryStream stream = new MemoryStream())
+            {
+                bitmap.Save(stream, ImageFormat.Png); // Was .Bmp, but this did not show a transparent background.
+
+                stream.Position = 0;
+                BitmapImage result = new BitmapImage();
+                result.BeginInit();
+                // According to MSDN, "The default OnDemand cache option retains access to the stream until the image is needed."
+                // Force the bitmap to load right now so we can dispose the stream.
+                result.CacheOption = BitmapCacheOption.OnLoad;
+                result.StreamSource = stream;
+                result.EndInit();
+                result.Freeze();
+                return result;
             }
         }
     }

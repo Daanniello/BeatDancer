@@ -8,10 +8,28 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="warning-icon-hi.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Extended.Wpf.Toolkit" Version="4.2.0" />
     <PackageReference Include="FFMpegCore" Version="4.7.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="ScoreSaberLib" Version="2.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\warning-icon-hi.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Resources\Vids\407698.mp4">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Resources\SoundEffects\" />
   </ItemGroup>
 
 </Project>

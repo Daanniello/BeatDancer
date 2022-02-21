@@ -7,14 +7,13 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="963" Width="1730" WindowStartupLocation="CenterScreen" WindowState="Normal" Background="Black">
     <Grid x:Name="MainGrid">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition/>
-            <ColumnDefinition/>
-        </Grid.ColumnDefinitions>
         <Grid Margin="300,0,0,0" Grid.ColumnSpan="2">
             <Canvas x:Name="CanvasSpace" Width="1200" HorizontalAlignment="Center" Height="901"/>
         </Grid>
         <Label x:Name="SongNameLabel" Content="Label" HorizontalAlignment="Left" Height="36" Margin="32,0,0,89" VerticalAlignment="Bottom" Width="158" Foreground="White" VerticalContentAlignment="Bottom"/>
+        <Grid x:Name="LightshowOverlayGrid" Grid.ColumnSpan="2">
+            <MediaElement x:Name="BackgroundVideo" Opacity="0.4" LoadedBehavior="Manual" UnloadedBehavior="Pause"/>
+        </Grid>
         <ListView x:Name="ListViewPlayers" Margin="0,-22,0,157" Background="{x:Null}" VerticalContentAlignment="Stretch" UseLayoutRounding="False" ScrollViewer.VerticalScrollBarVisibility="Hidden" Visibility="Visible" HorizontalAlignment="Left" Width="568" BorderBrush="{x:Null}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" Foreground="#FF040404" FontFamily="Microsoft YaHei UI">
             <ListView.View>
                 <GridView>
@@ -34,6 +33,9 @@
         <Label x:Name="BatteRoyalTimerLabel" Content="0" HorizontalAlignment="Left" Height="90" Margin="168,0,0,25" VerticalAlignment="Bottom" Width="232" Foreground="White" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontFamily="Impact" FontSize="72" FontWeight="Normal"/>
         <Grid x:Name="TransitionScreen" Grid.ColumnSpan="2" Background="Black" Visibility="Hidden">
             <TextBlock x:Name="TransitionLabel" TextAlignment="Center" Text="" TextWrapping="Wrap" Height="479" Width="1227" Foreground="White" FontSize="120" FontWeight="Bold" FontFamily="Arial Black" Margin="252,234,252,234"/>
+            <Image x:Name="warningLeft" Height="275" VerticalAlignment="Center" Width="276" Source="/Resources/warning-icon-hi.png" Margin="10,0,1444,0" Visibility="Hidden"/>
+            <Image x:Name="warningRight" Height="275" Margin="1445,0,10,0" VerticalAlignment="Center" Width="275" Source="/Resources/warning-icon-hi.png" Visibility="Hidden"/>
         </Grid>
+
     </Grid>
 </Window>

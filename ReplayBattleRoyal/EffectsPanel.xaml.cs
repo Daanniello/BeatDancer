@@ -72,7 +72,7 @@ namespace ReplayBattleRoyal
         private void ChangeBlackWhiteButton_Click(object sender, RoutedEventArgs e)
         {
             ChangeAllColor(Brushes.White);
-            ChangeNoteColors(Brushes.Black, Brushes.White, Brushes.White, Brushes.Black);
+            ChangeNoteColors(Brushes.White, Brushes.Black, Brushes.Black, Brushes.White);
             ChangeAllLeaderboardColor(Brushes.White);
         }
 
@@ -103,9 +103,10 @@ namespace ReplayBattleRoyal
             ChangeAllSize(+0.5);
         }
 
-        public void ChangeAllSize(double value)
+        public void ChangeAllSize(double value, bool isIncrease = true)
         {
-            foreach (var player in currentPlayerList) ChangeSize(player, player.TrailListLeft.First().StrokeThickness + value);
+            if(!isIncrease) foreach (var player in currentPlayerList) ChangeSize(player, value);
+            else foreach (var player in currentPlayerList) ChangeSize(player, player.TrailListLeft.First().StrokeThickness + value);
         }
 
         public void ChangeSize(Player player, double size)
@@ -151,13 +152,14 @@ namespace ReplayBattleRoyal
             var color = new SolidColorBrush(ColorManager.ColorFromHSV(random.Next(0, 360), random.Next(75, 100) / 100.00, 1));
             ChangeAllColor(color);
         }
-        private void ChangeColor(Player player, Brush color)
+        public void ChangeColor(Player player, Brush color)
         {
             if (color == null) return;
             player.LeftHand.Fill = color;
             player.LeftHandTip.Stroke = color;
             player.RightHand.Fill = color;
             player.RightHandTip.Stroke = color;
+            player.Head.Stroke = color;
 
             foreach (var trail in player.TrailListLeft) trail.Stroke = color;
             foreach (var trail in player.TrailListRight) trail.Stroke = color;
@@ -267,11 +269,25 @@ namespace ReplayBattleRoyal
 
         private void HighlightRandomPersonButton_Click(object sender, RoutedEventArgs e)
         {
+            ChangeAllSize(5, false);
             ChangeAllColor(Brushes.White);
             var randomPlayer = mainWindow.Players[new Random().Next(0, mainWindow.Players.Count)];
             ChangeColor(randomPlayer, randomPlayer.LeftHand.Stroke);
             ChangeAllLeaderboardColor(Brushes.White);
             ChangeLeaderboardColor(randomPlayer, randomPlayer.LeftHand.Stroke);
+            ChangeSize(randomPlayer, 20);
+        }
+
+        private void TestButton_Click(object sender, RoutedEventArgs e)
+        {
+            Task.Run(async () => {
+                for (var i = 0; i < 360; i++)
+                {
+                    Dispatcher.Invoke(() => { mainWindow.CanvasSpace.RenderTransform = new RotateTransform(i, mainWindow.CanvasSpace.Width / 2, mainWindow.CanvasSpace.Height / 2); });
+                    await Task.Delay(5000 / 360);
+                }
+            });
+                               
         }
     }
 }

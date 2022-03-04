@@ -24,7 +24,7 @@
 
   <ItemGroup>
     <None Update="Resources\Vids\407698.mp4">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 

@@ -7,13 +7,13 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="963" Width="1730" WindowStartupLocation="CenterScreen" WindowState="Normal" Background="Black">
     <Grid x:Name="MainGrid">
-        <Grid Margin="300,0,0,0" Grid.ColumnSpan="2">
-            <Canvas x:Name="CanvasSpace" Width="1200" HorizontalAlignment="Center" Height="901"/>
-        </Grid>
-        <Label x:Name="SongNameLabel" Content="Label" HorizontalAlignment="Left" Height="36" Margin="32,0,0,89" VerticalAlignment="Bottom" Width="158" Foreground="White" VerticalContentAlignment="Bottom"/>
         <Grid x:Name="LightshowOverlayGrid" Grid.ColumnSpan="2">
             <MediaElement x:Name="BackgroundVideo" Opacity="0.4" LoadedBehavior="Manual" UnloadedBehavior="Pause"/>
         </Grid>
+        <Grid Margin="10,0,0,0">
+            <Canvas x:Name="CanvasSpace" Width="1200" HorizontalAlignment="Center" Height="901"/>
+        </Grid>
+        <Label x:Name="SongNameLabel" Content="Label" HorizontalAlignment="Left" Height="36" Margin="32,0,0,89" VerticalAlignment="Bottom" Width="158" Foreground="White" VerticalContentAlignment="Bottom"/>
         <ListView x:Name="ListViewPlayers" Margin="0,-22,0,157" Background="{x:Null}" VerticalContentAlignment="Stretch" UseLayoutRounding="False" ScrollViewer.VerticalScrollBarVisibility="Hidden" Visibility="Visible" HorizontalAlignment="Left" Width="568" BorderBrush="{x:Null}" ScrollViewer.HorizontalScrollBarVisibility="Hidden" Foreground="#FF040404" FontFamily="Microsoft YaHei UI">
             <ListView.View>
                 <GridView>

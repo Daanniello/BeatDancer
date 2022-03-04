@@ -45,8 +45,12 @@ namespace ReplayBattleRoyal
         private ImageBrush backgroundBrush;
         private ColorManager.HSVColor[,] originalPixels;
         private List<Grid> lightEventBackgrounds = new List<Grid>();
+        private int backgroundVideoDelay;
 
-        private double _speedFactor = 11;
+        private int playerStartAmount;
+
+        //10.9
+        private double _speedFactor = 12;
 
         public bool streamMode = false;
         public GameModes gameMode = GameModes.None;
@@ -70,12 +74,10 @@ namespace ReplayBattleRoyal
 
             _scoresaberClient = new ScoreSaberClient();
 
-            //84701
-            //92172
-            Start(407698, 5, country: null, streamMode: false, GameModes.None, useBackgroundVideo: true);
+            Start(107507, 5, country: null, streamMode: false, GameModes.None, useBackgroundVideo: true, backgrounVideoDelay: -2100);
         }
 
-        public async Task Start(int songID, int playerAmount = 1, string country = null, bool streamMode = false, GameModes gameMode = GameModes.None, bool useBackgroundVideo = false)
+        public async Task Start(int songID, int playerAmount = 1, string country = null, bool streamMode = false, GameModes gameMode = GameModes.None, bool useBackgroundVideo = false, int backgrounVideoDelay = 0)
         {
             this.streamMode = streamMode;
             this.gameMode = gameMode;
@@ -108,6 +110,7 @@ namespace ReplayBattleRoyal
                 BatteRoyalTimerLabel.Visibility = Visibility.Hidden;
             }
 
+            this.backgroundVideoDelay = backgrounVideoDelay;
             this.songID = songID;
             LoadingLabel.Content = $"Loading... Getting song info";
             leaderboardInfo = await _scoresaberClient.Api.Leaderboards.GetLeaderboardInfoByID(songID);
@@ -174,17 +177,28 @@ namespace ReplayBattleRoyal
             effectsPanel.Show();
 
             //Show intro
+            string[] text = new string[] {
+                $"This video shows {Players.Count} Beat Saber plays at once",
+                $"This video contains rapid flashes" };
+
             var textBattleRoyale = new string[] {
                 $"This video shows {Players.Count} Beat Saber plays at once",
                 $"Every couple seconds a player is eliminated",
                 $"This video contains rapid flashes"
             };
-            var textNormal = new string[] {
-                $"This video shows {Players.Count} Beat Saber plays at once",
-                $"This video contains rapid flashes"
-            };
 
-            if (streamMode) await MediaManager.ShowIntro(this, textNormal);
+            switch (gameMode)
+            {
+                case GameModes.None:
+                    break;
+                case GameModes.BattleRoyale:
+                    text = textBattleRoyale;
+                    break;
+                default:
+                    break;
+            }
+
+            if (streamMode) await MediaManager.ShowIntro(this, text);
 
             LoadingLabel.Visibility = Visibility.Hidden;
             StartPlay();
@@ -202,16 +216,31 @@ namespace ReplayBattleRoyal
             {
                 var task = new Task(() =>
                 {
-                    if (player == Players.FirstOrDefault(x => (x.ReplayModel.Frames[100].A - x.ReplayModel.Frames[0].A) < 2)) Play(player, width, height, true);
+                    if (player == Players.FirstOrDefault(x => (x.ReplayModel.Frames[100].A - x.ReplayModel.Frames[0].A) < 2 && (x.ReplayModel.Frames[100].A - x.ReplayModel.Frames[0].A) > 0.1))
+                    {
+                        Play(player, width, height, true);
+                    }
                     else Play(player, width, height, false);
                 });
-                task.Start();
                 tasks.Add(task);
 
             }
 
-            PlaySong(1000);
+            //Player start amount 
+            playerStartAmount = Players.Count();
+            //Start playing background video if its been set
+            if (BackgroundVideo.Source != null)
+            {
+                if(backgroundVideoDelay > 0) await Task.Delay(backgroundVideoDelay);
+                BackgroundVideo.Play();
+                if (backgroundVideoDelay < 0) await Task.Delay(backgroundVideoDelay * -1);
+            }
+            //Start playing song 
+            PlaySong();
+            //Start all players
+            tasks.ForEach(task => { task.Start(); });
 
+            //Start eliminating players if battle royale mode 
             if (gameMode == GameModes.BattleRoyale) StartEliminatingPlayers(Players.Count, Convert.ToInt32(Math.Round(Players.First().ReplayModel.Frames.Last().A)));
             Task.WaitAll(tasks.ToArray());
         }
@@ -221,13 +250,21 @@ namespace ReplayBattleRoyal
             var startAmount = playerAmount;
             do
             {
-                var timeToWait = (songDuration / startAmount);
+                var timeToWait = Math.Round((double)(songDuration / startAmount), 1);
                 Dispatcher.Invoke(() => { BatteRoyalTimerLabel.Content = timeToWait; });
-                for (var i = 0; i < timeToWait; i++)
+
+                Task.Run(async () =>
                 {
-                    await Task.Delay(1000);
-                    Dispatcher.Invoke(() => { BatteRoyalTimerLabel.Content = Convert.ToInt32(BatteRoyalTimerLabel.Content) - 1; });
-                }
+                    for (var i = 0; i < timeToWait; i++)
+                    {
+                        await Task.Delay(1000);
+                        Dispatcher.Invoke(() => { BatteRoyalTimerLabel.Content = Convert.ToInt32(BatteRoyalTimerLabel.Content) - 1; });
+                    }
+                });
+
+                await Task.Delay(TimeSpan.FromSeconds(timeToWait));
+
+
                 EliminateLastPlayer();
 
                 playerAmount--;
@@ -268,19 +305,7 @@ namespace ReplayBattleRoyal
             //player.ReplayModel.Frames.RemoveAll(x => x.A < player.ReplayModel.NoteTime.First());
 
             //await Task.Delay(TimeSpan.FromSeconds(player.ReplayModel.NoteTime.First()));
-            await Task.Delay(1000);
-
-            //Play Background video if one has been set
-            if (hasLead)
-            {
-                Dispatcher.Invoke(() =>
-                {
-                    if (BackgroundVideo.Source != null)
-                    {
-                        BackgroundVideo.Play();
-                    }
-                });
-            };
+            await Task.Delay(100);
 
             var avgFps = player.ReplayModel.Frames.Average(x => x.I);
 
@@ -290,6 +315,8 @@ namespace ReplayBattleRoyal
 
             var storedNoteTimes = new List<double>();
             storedNoteTimes.AddRange(player.ReplayModel.NoteTime.ToArray());
+            var storedNoteTimesHitsound = new List<double>();
+            storedNoteTimesHitsound.AddRange(player.ReplayModel.NoteTime.ToArray());
             var storedCombo = new List<long>();
             storedCombo.AddRange(player.ReplayModel.Combos.ToArray());
             var storedScores = new List<long>();
@@ -326,10 +353,27 @@ namespace ReplayBattleRoyal
                 //Add note if the time has come
                 if (player.ReplayModel.NoteTime.Count != 0)
                 {
+                    //Add Notes
+                    if (storedNoteTimesHitsound.Count > 0)
+                    {
+                        var noteTimeHitsound = storedNoteTimesHitsound.First();
+                        if (noteTimeHitsound < frame.A + 0.150)
+                        {
+                            if (hasLead)
+                            {
+                                var note = player.ReplayModel.NoteInfos.First();
+                                AddNote(note, 150);
+                                player.ReplayModel.NoteInfos.Remove(note);
+                            }
+                            storedNoteTimesHitsound.Remove(noteTimeHitsound);
+                        }
+                    }
+                    
+
                     var noteTime = player.ReplayModel.NoteTime.First();
                     if (noteTime < frame.A)
                     {
-                        if (player.ReplayModel.NoteInfos.Count == 0) continue;
+                        //if (player.ReplayModel.NoteInfos.Count == 0) continue;
 
                         if (hasLead && lightshowIsActivated)
                         {
@@ -438,13 +482,7 @@ namespace ReplayBattleRoyal
                         storedCombo.Remove(storedCombo.First());
                         storedScores.Remove(storedScores.First());
 
-                        var note = player.ReplayModel.NoteInfos.First();
-                        if (hasLead)
-                        {
-                            AddNote(note);
-                            AudioManager.PlayHitSound();
-                        }
-                        player.ReplayModel.NoteInfos.Remove(note);
+
                         player.ReplayModel.NoteTime.Remove(noteTime);
 
                         player.ReplayModel.Combos.Remove(player.ReplayModel.Combos.First());
@@ -519,7 +557,7 @@ namespace ReplayBattleRoyal
                 await Task.Delay(TimeSpan.FromSeconds(timeTillNextFrame) / _speedFactor);
 
                 //Add points to the player and change leaderboard
-                if (count % 100 == 0)
+                if (count % (5 * Players.Count) == 0)
                 {
 
                     if (frame.A > storedNoteTimes.First())
@@ -540,7 +578,29 @@ namespace ReplayBattleRoyal
                                 for (var i = 0; i < 5 % acc.ToString().Length; i++) spacesa += "  ";
                                 for (var i = 0; i < 9 % combo.ToString().Length; i++) spacesc += "  ";
                                 if (player.ReplayModel.Combos.Count() != 0) item.Content = $"{acc}{spacesa}%    {combo}{spacesc}            {player.Name}";
-                                ListViewPlayers.ItemsSource = listViewItems.OrderByDescending(x => x.Content.ToString().Split(" ")[0].Trim());
+                                var orderedListview = listViewItems.OrderByDescending(x => x.Content.ToString().Split(" ")[0].Trim());
+
+                                //Give top 30 more attention
+                                //if (hasLead && orderedListview.Count() > 3)
+                                //{
+                                //    var count = 1;
+                                //    foreach (var oli in orderedListview)
+                                //    {
+                                //        if (count <= 3)
+                                //        {
+                                //            orderedListview.ElementAt(count).FontSize = 30 + count * 10;
+                                //            orderedListview.ElementAt(count).Width += 30 * count;
+                                //        }
+                                //        else
+                                //        {
+                                //            oli.Width = 460;
+                                //            oli.FontSize = 30;
+                                //        }
+                                //        count++;
+                                //    }
+                                //}                               
+
+                                ListViewPlayers.ItemsSource = orderedListview;
                                 ListViewPlayers.Items.Refresh();
                             }
                         });
@@ -548,9 +608,9 @@ namespace ReplayBattleRoyal
 
                 }
 
+                //Set all object positions
                 var centerWidth = width / 2;
                 var centerHeight = height / 2;
-
                 Dispatcher.Invoke(() =>
                 {
 
@@ -691,7 +751,7 @@ namespace ReplayBattleRoyal
             return true;
         }
 
-        public async void AddNote(string noteInfo)
+        public async void AddNote(string noteInfo, int delay = 0)
         {
             var x = Convert.ToInt32(noteInfo.Substring(0, 1));
             var y = Convert.ToInt32(noteInfo.Substring(1, 1));
@@ -706,18 +766,31 @@ namespace ReplayBattleRoyal
                 string pathData = "M50,50 L150,90 L250,50 L250,30 L50,30 Z";
                 var arrow = new System.Windows.Shapes.Path() { Data = (Geometry)converter.ConvertFrom(pathData), Fill = type == 0 ? NoteColorLeftArrow : NoteColorRightArrow, Stroke = System.Windows.Media.Brushes.White, StrokeThickness = 2, Width = 100, Height = 30, Stretch = Stretch.Fill };
 
+                var dot = new Ellipse() { Fill = System.Windows.Media.Brushes.White, Width = 50, Height = 50};
 
                 CanvasSpace.Children.Add(rec);
-                CanvasSpace.Children.Add(arrow);
+                
                 var posx = CanvasSpace.Width / 4 * x + 110;
-                var posy = CanvasSpace.Height / 3 * y + 100;
+                var posy = CanvasSpace.Height / 2.5 * y + 100;
                 var posxdir = posx + 15;
                 var posydir = posy + 65;
+
                 Canvas.SetLeft(rec, posx);
                 Canvas.SetBottom(rec, posy);
-                Canvas.SetLeft(arrow, posxdir);
-                Canvas.SetBottom(arrow, posydir);
 
+                //Dot note
+                if (direction == 8)
+                {
+                    CanvasSpace.Children.Add(dot);
+                    Canvas.SetLeft(dot, posx + 30);
+                    Canvas.SetBottom(dot, posy + 30);
+                }
+                else
+                {
+                    CanvasSpace.Children.Add(arrow);
+                    Canvas.SetLeft(arrow, posxdir);
+                    Canvas.SetBottom(arrow, posydir);
+                }
 
                 if (direction == 0) arrow.RenderTransform = new RotateTransform(180, 48, 35);//up
                 if (direction == 1) arrow.RenderTransform = new RotateTransform(0, -45, -20); //down 
@@ -758,8 +831,15 @@ namespace ReplayBattleRoyal
                     Canvas.SetBottom(arrow, posydir - 5 * i);
                 }
 
+                //70
+                var soundDelay = 73;
+                await Task.Delay(delay - soundDelay);
+                AudioManager.PlayHitSound();
+                await Task.Delay(soundDelay);
+
                 CanvasSpace.Children.Remove(rec);
                 CanvasSpace.Children.Remove(arrow);
+                CanvasSpace.Children.Remove(dot);
             });
         }
 
@@ -861,12 +941,16 @@ namespace ReplayBattleRoyal
 
             if (useBackgroundVideo)
             {
-                if (File.Exists(AppContext.BaseDirectory + $@"Audio/Video/{songID}.mp4"))
+                if (File.Exists(GlobalConfig.BasePath + "/Resources/Vids/" + $"{songID}.mp4"))
                 {
                     BackgroundVideo.Source = new Uri(GlobalConfig.BasePath + "/Resources/Vids/" + $"{songID}.mp4");
                     BackgroundVideo.Stretch = Stretch.Fill;
-                    BackgroundVideo.Opacity = 0.1;
+                    BackgroundVideo.Opacity = 0.20;
                     BackgroundVideo.Volume = 0;
+                    BackgroundVideo.Play();
+                    await Task.Delay(10000);
+                    BackgroundVideo.Position = TimeSpan.FromSeconds(0);
+                    BackgroundVideo.Pause();
                 }
             }
             else
@@ -981,12 +1065,10 @@ namespace ReplayBattleRoyal
             File.Delete(AppContext.BaseDirectory + $@"Audio\ZipTemp/Extract/{songID}.egg");
         }
 
-        public async Task PlaySong(int delay)
+        public async Task PlaySong()
         {
             mediaPlayer.Open(new Uri(AppContext.BaseDirectory + $@"Audio\{songID}.mp3"));
-            await Task.Delay(delay);
             mediaPlayer.Play();
-
 
             //var noteTimings = new List<double>();
             //foreach (var time in Players.First().ReplayModel.NoteTime) noteTimings.Add(time);
@@ -997,9 +1079,9 @@ namespace ReplayBattleRoyal
 
             while (true)
             {
-                await Task.Delay(100);
                 songTime = sw.ElapsedMilliseconds / 1000.000;
                 Dispatcher.Invoke(() => { SongTimeLabel.Content = songTime; });
+                await Task.Delay(100);
             }
         }
 

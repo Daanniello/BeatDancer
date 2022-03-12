@@ -77,7 +77,7 @@ namespace ReplayBattleRoyal
 
             _scoresaberClient = new ScoreSaberClient();
 
-            Start(369399, 25, country: null, streamMode: true, GameModes.PerfectAcc, useBackgroundVideo: true, backgrounVideoDelay: -2200);
+            Start(107507, 10, country: null, streamMode: false, GameModes.None, useBackgroundVideo: false, backgrounVideoDelay: -2200);
         }
 
         public async Task Start(int songID, int playerAmount = 1, string country = null, bool streamMode = false, GameModes gameMode = GameModes.None, bool useBackgroundVideo = false, int backgrounVideoDelay = 0)
@@ -363,8 +363,27 @@ namespace ReplayBattleRoyal
             storedNoteTimes.AddRange(player.ReplayModel.NoteTime.ToArray());
             var storedNoteTimesHitsound = new List<double>();
             storedNoteTimesHitsound.AddRange(player.ReplayModel.NoteTime.ToArray());
-            var storedCombo = new List<long>();
-            storedCombo.AddRange(player.ReplayModel.Combos.ToArray());
+            //Add storedcombo but also fix possible errors in the data
+            var storedCombo = new List<long>();          
+            var combos = player.ReplayModel.Combos.ToArray();
+            for (var i = 0; i < combos.Length; i++)
+            {
+                if (i == 0 || i >= combos.Length - 1)
+                {
+                    storedCombo.Add(combos[i]);
+                    continue;
+                }
+                if (combos[i + 1] > combos[i] && combos[i - 1] > combos[i] && combos[i] != 0)
+                {
+                    var combo = storedCombo.ElementAt(i - 1);
+                    storedCombo.Remove(combo);
+                    storedCombo.Add(combos[i]);
+                    storedCombo.Add(combo);
+                    continue;
+                }
+                storedCombo.Add(combos[i]);
+            }
+
             var storedScores = new List<long>();
             storedScores.AddRange(player.ReplayModel.Scores.ToArray());
             var storedLightshowData = new List<Event>();

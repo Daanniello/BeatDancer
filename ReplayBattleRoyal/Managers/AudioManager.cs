@@ -27,7 +27,7 @@ namespace ReplayBattleRoyal
 
         public static async Task p()
         {
-            var soundPlayerHitsound = new MediaPlayer() { Volume = 0.33 };
+            var soundPlayerHitsound = new MediaPlayer() { Volume = 0.2 };
             soundPlayerHitsound.Open(path);
             soundPlayerHitsound.Play();
             await Task.Delay(300);
@@ -36,30 +36,18 @@ namespace ReplayBattleRoyal
 
         public async static Task PlayHitSounds(List<double> noteTimings)
         {
-            var queue = new Queue<MediaPlayer>();
-            for (var i = 0; i < 20; i++)
-            {
-                var player = new MediaPlayer();
-                player.Open(path);
-                queue.Enqueue(player);
-            }
-
-
-
             var count = 0;
             await Task.Delay(TimeSpan.FromMilliseconds(noteTimings[0] * 1000));
             foreach (var time in noteTimings)
             {
                 var waitTime = (noteTimings[count + 1] - time);
                 count++;
-                if (waitTime < 0) continue;
+                if (waitTime < 0)
+                {
+                    waitTime = waitTime * -1;
+                }
 
-                queue.ElementAt(2).Stop();
-                var first = queue.First();
-                first.Play();
-                queue.Enqueue(first);
-                queue.Dequeue();
-
+                PlayHitSound();
                 await Task.Delay(TimeSpan.FromSeconds(waitTime));
             }
         }

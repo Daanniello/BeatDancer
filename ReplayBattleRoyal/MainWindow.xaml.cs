@@ -50,7 +50,7 @@ namespace ReplayBattleRoyal
         private int playerStartAmount;
 
         //10.9
-        private double _speedFactor = 12;
+        private double _speedFactor = 10.7;
 
         public bool streamMode = false;
         public GameModes gameMode = GameModes.None;
@@ -62,10 +62,13 @@ namespace ReplayBattleRoyal
         public System.Windows.Media.Brush NoteColorLeftArrow { get; set; }
         public System.Windows.Media.Brush NoteColorRightArrow { get; set; }
 
+        public int perfectAccAmount = 110;
         public enum GameModes
         {
             None,
             BattleRoyale,
+            ComboDrop,
+            PerfectAcc
         }
 
         public MainWindow()
@@ -74,7 +77,7 @@ namespace ReplayBattleRoyal
 
             _scoresaberClient = new ScoreSaberClient();
 
-            Start(107507, 5, country: null, streamMode: false, GameModes.None, useBackgroundVideo: true, backgrounVideoDelay: -2100);
+            Start(369399, 25, country: null, streamMode: true, GameModes.PerfectAcc, useBackgroundVideo: true, backgrounVideoDelay: -2200);
         }
 
         public async Task Start(int songID, int playerAmount = 1, string country = null, bool streamMode = false, GameModes gameMode = GameModes.None, bool useBackgroundVideo = false, int backgrounVideoDelay = 0)
@@ -183,7 +186,19 @@ namespace ReplayBattleRoyal
 
             var textBattleRoyale = new string[] {
                 $"This video shows {Players.Count} Beat Saber plays at once",
-                $"Every couple seconds a player is eliminated",
+                $"Battle Royale: Every couple seconds a player is eliminated",
+                $"This video contains rapid flashes"
+            };
+
+            var textComboDrop = new string[] {
+                $"This video shows {Players.Count} Beat Saber plays at once",
+                $"Combo Drop: Whenever a player loses combo, the player will get eliminated",
+                $"This video contains rapid flashes"
+            };
+
+            var textPerfectAcc = new string[] {
+                $"This video shows {Players.Count} Beat Saber plays at once",
+                $"Perfect Acc: Whenever a player hits lower as {perfectAccAmount}, the player gets eliminated",
                 $"This video contains rapid flashes"
             };
 
@@ -194,12 +209,17 @@ namespace ReplayBattleRoyal
                 case GameModes.BattleRoyale:
                     text = textBattleRoyale;
                     break;
+                case GameModes.ComboDrop:
+                    text = textComboDrop;
+                    break;
+                case GameModes.PerfectAcc:
+                    text = textPerfectAcc;
+                    break;
                 default:
                     break;
             }
 
             if (streamMode) await MediaManager.ShowIntro(this, text);
-
             LoadingLabel.Visibility = Visibility.Hidden;
             StartPlay();
         }
@@ -231,7 +251,7 @@ namespace ReplayBattleRoyal
             //Start playing background video if its been set
             if (BackgroundVideo.Source != null)
             {
-                if(backgroundVideoDelay > 0) await Task.Delay(backgroundVideoDelay);
+                if (backgroundVideoDelay > 0) await Task.Delay(backgroundVideoDelay);
                 BackgroundVideo.Play();
                 if (backgroundVideoDelay < 0) await Task.Delay(backgroundVideoDelay * -1);
             }
@@ -242,6 +262,7 @@ namespace ReplayBattleRoyal
 
             //Start eliminating players if battle royale mode 
             if (gameMode == GameModes.BattleRoyale) StartEliminatingPlayers(Players.Count, Convert.ToInt32(Math.Round(Players.First().ReplayModel.Frames.Last().A)));
+
             Task.WaitAll(tasks.ToArray());
         }
 
@@ -264,7 +285,6 @@ namespace ReplayBattleRoyal
 
                 await Task.Delay(TimeSpan.FromSeconds(timeToWait));
 
-
                 EliminateLastPlayer();
 
                 playerAmount--;
@@ -276,18 +296,44 @@ namespace ReplayBattleRoyal
             Dispatcher.Invoke(() =>
             {
                 var toRemove = listViewItems.OrderByDescending(x => x.Content.ToString().Split(" ")[0].Trim()).Last();
-                listViewItems.Remove(toRemove);
                 var playerToRemove = Players.FirstOrDefault(x => toRemove.Content.ToString().Contains(x.Name));
+                RemovePlayer(playerToRemove);
+            });
+        }
 
-                if (!playerToRemove.hasLead) Players.Remove(playerToRemove);
+        public void RemovePlayer(Player player)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                var playerToRemove = listViewItems.FirstOrDefault(x => x.Content.ToString().Contains(player.Name));
+                if (playerToRemove == null) return;
 
-                CanvasSpace.Children.Remove(playerToRemove.LeftHand);
-                CanvasSpace.Children.Remove(playerToRemove.RightHand);
-                CanvasSpace.Children.Remove(playerToRemove.LeftHandTip);
-                CanvasSpace.Children.Remove(playerToRemove.RightHandTip);
-                CanvasSpace.Children.Remove(playerToRemove.Head);
-                foreach (var trail in playerToRemove.TrailListLeft) CanvasSpace.Children.Remove(trail);
-                foreach (var trail in playerToRemove.TrailListRight) CanvasSpace.Children.Remove(trail);
+                //Perfect acc Mode
+                if(gameMode == GameModes.PerfectAcc)
+                {
+                    var opacity = 0.2;
+                    playerToRemove.Opacity = opacity;
+                    player.LeftHand.Opacity = opacity;
+                    player.RightHand.Opacity = opacity;
+                    player.LeftHandTip.Opacity = opacity;
+                    player.RightHandTip.Opacity = opacity;
+                    player.Head.Opacity = opacity;
+                    foreach (var trail in player.TrailListLeft) trail.Opacity = opacity;
+                    foreach (var trail in player.TrailListRight) trail.Opacity = opacity;
+
+                    ListViewPlayers.Items.Refresh();
+                    return;
+                }
+
+                listViewItems.Remove(playerToRemove);
+                if (!player.hasLead) Players.Remove(player);
+                CanvasSpace.Children.Remove(player.LeftHand);
+                CanvasSpace.Children.Remove(player.RightHand);
+                CanvasSpace.Children.Remove(player.LeftHandTip);
+                CanvasSpace.Children.Remove(player.RightHandTip);
+                CanvasSpace.Children.Remove(player.Head);
+                foreach (var trail in player.TrailListLeft) CanvasSpace.Children.Remove(trail);
+                foreach (var trail in player.TrailListRight) CanvasSpace.Children.Remove(trail);
 
                 ListViewPlayers.Items.Refresh();
             });
@@ -368,7 +414,7 @@ namespace ReplayBattleRoyal
                             storedNoteTimesHitsound.Remove(noteTimeHitsound);
                         }
                     }
-                    
+
 
                     var noteTime = player.ReplayModel.NoteTime.First();
                     if (noteTime < frame.A)
@@ -454,6 +500,12 @@ namespace ReplayBattleRoyal
                                 }
                             }
 
+                            //Remove player if Perfect mode is on and player hits a low hit.
+                            if (gameMode == GameModes.PerfectAcc)
+                            {
+                                if (storedScores.First() < perfectAccAmount) RemovePlayer(player);
+                            }
+
                             currentScore += comboMultiplier * storedScores.First();
 
 
@@ -508,6 +560,16 @@ namespace ReplayBattleRoyal
                                     item.BorderBrush = player.LeftHand.Stroke;
                                 }
                             });
+
+                            //If ComboDrop gamemode remove player on miss
+                            if (gameMode == GameModes.ComboDrop)
+                            {
+                                if (listViewItems.Count > 1)
+                                {
+                                    Dispatcher.Invoke(() => RemovePlayer(player));
+                                    continue;
+                                }
+                            }
                         }
                     }
                 }
@@ -691,7 +753,7 @@ namespace ReplayBattleRoyal
             var replayModel = await GetReplayModel($"https://sspreviewdecode.azurewebsites.net/?playerID={playerID}&songID={songID}");
 
             if (replayModel == null || playerInfo == null) return false;
-            if (replayModel.Frames == null /*|| replayModel.Info.LeftHanded == true*/) return false; //TODO: include left hand mode
+            if (replayModel.Frames == null || replayModel.Info.LeftHanded == true) return false; //TODO: include left hand mode
 
             await Dispatcher.Invoke(async () =>
             {
@@ -766,10 +828,10 @@ namespace ReplayBattleRoyal
                 string pathData = "M50,50 L150,90 L250,50 L250,30 L50,30 Z";
                 var arrow = new System.Windows.Shapes.Path() { Data = (Geometry)converter.ConvertFrom(pathData), Fill = type == 0 ? NoteColorLeftArrow : NoteColorRightArrow, Stroke = System.Windows.Media.Brushes.White, StrokeThickness = 2, Width = 100, Height = 30, Stretch = Stretch.Fill };
 
-                var dot = new Ellipse() { Fill = System.Windows.Media.Brushes.White, Width = 50, Height = 50};
+                var dot = new Ellipse() { Fill = System.Windows.Media.Brushes.White, Width = 50, Height = 50 };
 
                 CanvasSpace.Children.Add(rec);
-                
+
                 var posx = CanvasSpace.Width / 4 * x + 110;
                 var posy = CanvasSpace.Height / 2.5 * y + 100;
                 var posxdir = posx + 15;
@@ -832,9 +894,9 @@ namespace ReplayBattleRoyal
                 }
 
                 //70
-                var soundDelay = 73;
+                var soundDelay = 70;
                 await Task.Delay(delay - soundDelay);
-                AudioManager.PlayHitSound();
+                //AudioManager.PlayHitSound();
                 await Task.Delay(soundDelay);
 
                 CanvasSpace.Children.Remove(rec);

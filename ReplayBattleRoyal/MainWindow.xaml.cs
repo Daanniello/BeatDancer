@@ -50,7 +50,7 @@ namespace ReplayBattleRoyal
         private int playerStartAmount;
 
         //10.9
-        private double _speedFactor = 12.2;
+        private double _speedFactor = 13.3;
 
         public bool streamMode = false;
         public GameModes gameMode = GameModes.None;
@@ -78,7 +78,7 @@ namespace ReplayBattleRoyal
 
             _scoresaberClient = new ScoreSaberClient();
 
-            Start(212829, 5, country: null, streamMode: false, GameModes.None, useBackgroundVideo: true, backgrounVideoDelay: -1700);
+            Start(301269, 10, country: null, streamMode: false, GameModes.None, useBackgroundVideo: true, backgrounVideoDelay: -1700);
         }
 
         public async Task Start(int songID, int playerAmount = 1, string country = null, bool streamMode = false, GameModes gameMode = GameModes.None, bool useBackgroundVideo = false, int backgrounVideoDelay = 0)
@@ -140,7 +140,7 @@ namespace ReplayBattleRoyal
             var playersLoaded = 0;
 
             //Parallel loading
-            var secureLead = 7;
+            var secureLead = 5;
             var tasks = new List<Task>();
             for (var i = 0; i < playerAmount; i++)
             {
@@ -436,13 +436,22 @@ namespace ReplayBattleRoyal
                     //Add Notes
                     if (storedNoteTimesHitsound.Count > 0)
                     {
+                        var noteAnimationDelay = 0.300;
                         var noteTimeHitsound = storedNoteTimesHitsound.First();
-                        if (noteTimeHitsound < frame.A + 0.150)
+                        //Check average note time before next note
+                        if (player.ReplayModel.NoteTime.Count() > 5)
+                        {
+                            var noteRange = player.ReplayModel.NoteTime.GetRange(0, 5);
+                            var noteDiff = (noteRange.Last() - noteRange.First()) / 5;
+                            if (noteDiff < 0.1) noteAnimationDelay = noteDiff;
+                        }                        
+
+                        if (noteTimeHitsound < frame.A + noteAnimationDelay)
                         {
                             if (hasLead)
                             {
                                 var note = player.ReplayModel.NoteInfos.First();
-                                AddNote(note, 150);
+                                AddNote(note, noteAnimationDelay);
                                 player.ReplayModel.NoteInfos.Remove(note);
                             }
                             storedNoteTimesHitsound.Remove(noteTimeHitsound);
@@ -861,7 +870,7 @@ namespace ReplayBattleRoyal
             }            
         }
 
-        public async void AddNote(string noteInfo, int delay = 0)
+        public async void AddNote(string noteInfo, double delay = 0)
         {
             var x = Convert.ToInt32(noteInfo.Substring(0, 1));
             var y = Convert.ToInt32(noteInfo.Substring(1, 1));
@@ -909,23 +918,23 @@ namespace ReplayBattleRoyal
 
                 if (direction == 4)//upleft
                 {
-                    rec.RenderTransform = new RotateTransform(315, 0, 0);
-                    arrow.RenderTransform = new RotateTransform(135, 78, 8);
+                    rec.RenderTransform = new RotateTransform(315, rec.Width / 2, rec.Height / 2);
+                    arrow.RenderTransform = new RotateTransform(135, rec.Width / 2 - 0, rec.Height / 2 - 25);
                 }
                 if (direction == 5)//upright
                 {
-                    rec.RenderTransform = new RotateTransform(45, 0, 0);
-                    arrow.RenderTransform = new RotateTransform(225, 22.5, 60);
+                    rec.RenderTransform = new RotateTransform(45, rec.Width / 2, rec.Height / 2);
+                    arrow.RenderTransform = new RotateTransform(225, rec.Width / 2 - 15, rec.Height / 2 - 18);
                 }
                 if (direction == 6)//downleft
                 {
-                    rec.RenderTransform = new RotateTransform(45, 0, 0);
-                    arrow.RenderTransform = new RotateTransform(45, -5, -25);
+                    rec.RenderTransform = new RotateTransform(45, rec.Width / 2, rec.Height / 2);
+                    arrow.RenderTransform = new RotateTransform(45, rec.Width / 2 - 5, rec.Height / 2 - 25);
                 }
                 if (direction == 7)//downright
                 {
-                    rec.RenderTransform = new RotateTransform(315, 0, 0);
-                    arrow.RenderTransform = new RotateTransform(315, -35, -30);
+                    rec.RenderTransform = new RotateTransform(315, rec.Width / 2, rec.Height / 2);
+                    arrow.RenderTransform = new RotateTransform(315, rec.Width / 2 - 35, rec.Height / 2 - 30);
                 }
 
 
@@ -942,11 +951,11 @@ namespace ReplayBattleRoyal
                 }
 
                 //70
-                var soundDelay = 70;
-                await Task.Delay(delay - soundDelay);
+                var soundDelay = 0.070;
+                if(delay - soundDelay > 0) await Task.Delay(TimeSpan.FromSeconds(delay - soundDelay));
                 //AudioManager.PlayHitSound();
                 rec.Opacity = 1;
-                await Task.Delay(soundDelay);
+                await Task.Delay(TimeSpan.FromSeconds(soundDelay));
 
                 CanvasSpace.Children.Remove(rec);
                 CanvasSpace.Children.Remove(arrow);

@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ReplayBattleRoyal"
         mc:Ignorable="d"
-        Title="MainWindow" Height="963" Width="1730" WindowStartupLocation="CenterScreen" WindowState="Normal" Background="Black">
+        Title="MainWindow" Height="2160" Width="3840" WindowStartupLocation="CenterScreen" WindowState="Maximized" Background="Black" SizeToContent="WidthAndHeight">
     <Grid x:Name="MainGrid">
         <Grid x:Name="LightshowOverlayGrid" Grid.ColumnSpan="2">
             <MediaElement x:Name="BackgroundVideo" Opacity="0.4" LoadedBehavior="Manual" UnloadedBehavior="Pause"/>
@@ -31,12 +31,13 @@
         <Label x:Name="TimeLabelText" Content="Time:" HorizontalAlignment="Left" Height="26" Margin="32,0,0,63" VerticalAlignment="Bottom" Width="48" Foreground="White" RenderTransformOrigin="0.424,0.521" VerticalContentAlignment="Bottom"/>
         <Label x:Name="LoadingLabel" Content="Loading..." HorizontalAlignment="Left" Height="36" Margin="10,0,0,758" VerticalAlignment="Bottom" Width="275" Foreground="White" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"/>
         <Label x:Name="BatteRoyalTimerLabel" Content="0" HorizontalAlignment="Left" Height="90" Margin="168,0,0,25" VerticalAlignment="Bottom" Width="232" Foreground="White" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontFamily="Impact" FontSize="72" FontWeight="Normal"/>
+        <Grid x:Name="TransitionStartScreen" Grid.ColumnSpan="2" Background="Black" Visibility="Hidden"/>
         <Grid x:Name="TransitionScreen" Grid.ColumnSpan="2" Background="Black" Visibility="Hidden">
-            <Border Margin="10,0,0,0" HorizontalAlignment="Center" VerticalAlignment="Center" Height="927">
-                <TextBlock x:Name="TransitionLabel" TextAlignment="Center" Text="" TextWrapping="Wrap" Width="1228" Foreground="White" FontSize="120" FontWeight="Bold" FontFamily="Arial Black" Margin="0,298,0,-431" HorizontalAlignment="Left"/>
-            </Border>
+            <TextBox x:Name="TransitionLabel" Text="" TextWrapping="Wrap" FontSize="120" Foreground="White" FontWeight="Bold" FontFamily="Arial Black" Background="{x:Null}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" BorderBrush="{x:Null}" SelectionTextBrush="{x:Null}" SelectionBrush="{x:Null}" Margin="0,10,0,-10" HorizontalAlignment="Center" Width="1150"/>
             <Image x:Name="warningLeft" Height="275" VerticalAlignment="Center" Width="276" Source="/Resources/warning-icon-hi.png" Margin="10,0,1444,0" Visibility="Hidden"/>
             <Image x:Name="warningRight" Height="275" Margin="1445,0,10,0" VerticalAlignment="Center" Width="275" Source="/Resources/warning-icon-hi.png" Visibility="Hidden"/>
+            <Image x:Name="mapCover" Visibility="Hidden" Margin="1012,1404,2289,58" Source="/Logo (1).png"/>
+
         </Grid>
 
     </Grid>

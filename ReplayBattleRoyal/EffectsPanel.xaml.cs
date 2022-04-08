@@ -281,11 +281,13 @@ namespace ReplayBattleRoyal
         private void TestButton_Click(object sender, RoutedEventArgs e)
         {
             Task.Run(async () => {
-                for (var i = 0; i < 360; i++)
-                {
-                    Dispatcher.Invoke(() => { mainWindow.CanvasSpace.RenderTransform = new RotateTransform(i, mainWindow.CanvasSpace.Width / 2, mainWindow.CanvasSpace.Height / 2); });
-                    await Task.Delay(5000 / 360);
-                }
+                Dispatcher.Invoke(() => { mainWindow.CanvasSpace.RenderTransform = new RotateTransform(new Random().Next(-360, 360), mainWindow.CanvasSpace.Width / 2, mainWindow.CanvasSpace.Height / 2); });
+
+                //for (var i = 0; i < 360; i++)
+                //{
+                //    Dispatcher.Invoke(() => { mainWindow.CanvasSpace.RenderTransform = new RotateTransform(i, mainWindow.CanvasSpace.Width / 2, mainWindow.CanvasSpace.Height / 2); });
+                //    await Task.Delay(5000 / 360);
+                //}
             });
                                
         }

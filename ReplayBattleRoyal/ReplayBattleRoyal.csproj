@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Logo %281%29.png" />
     <None Remove="warning-icon-hi.png" />
   </ItemGroup>
 
@@ -19,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Logo (1).png" />
     <Resource Include="Resources\warning-icon-hi.png" />
   </ItemGroup>
 

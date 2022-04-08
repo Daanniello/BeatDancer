@@ -46,8 +46,7 @@ namespace ReplayBattleRoyal.Managers
         }
 
         public static async Task ShowIntro(MainWindow mainWindow, string[] textList)
-        {
-
+        {          
             mainWindow.TransitionScreen.Visibility = Visibility.Visible;
 
             await Task.Delay(1000);
@@ -61,11 +60,6 @@ namespace ReplayBattleRoyal.Managers
                     mainWindow.warningRight.Visibility = Visibility.Visible;
                 }
                 await Task.Delay(4000);
-                if (text == textList[textList.Length - 1])
-                {
-                    mainWindow.warningLeft.Visibility = Visibility.Hidden;
-                    mainWindow.warningRight.Visibility = Visibility.Hidden;
-                }
             }
 
             for (var i = 0; i < 100; i++)
@@ -73,6 +67,8 @@ namespace ReplayBattleRoyal.Managers
                 await Task.Delay(10);
                 mainWindow.TransitionScreen.Opacity -= 0.01;
                 mainWindow.TransitionLabel.Opacity -= 0.01;
+                mainWindow.warningLeft.Opacity -= 0.01;
+                mainWindow.warningRight.Opacity -= 0.01;
             }
 
             mainWindow.TransitionScreen.Visibility = Visibility.Hidden;

@@ -1,6 +1,8 @@
 ﻿using FFMpegCore;
 using FFMpegCore.Enums;
 using Newtonsoft.Json;
+using ReplayBattleRoyal.Entities;
+using ReplayBattleRoyal.GameModes;
 using ReplayBattleRoyal.Managers;
 using ReplayBattleRoyal.Models;
 using ScoreSaberLib;
@@ -36,7 +38,7 @@ namespace ReplayBattleRoyal
         public List<Player> Players = new List<Player>();
         private static MediaPlayer mediaPlayer = new MediaPlayer();
         private double songTime = 0;
-        private ScoreSaberClient _scoresaberClient;
+        public ScoreSaberClient ScoresaberClient;
         public List<ListViewItem> listViewItems = new List<ListViewItem>();
         private Leaderboard leaderboardInfo;
         private Random random = new Random();
@@ -53,10 +55,10 @@ namespace ReplayBattleRoyal
         private int playerStartAmount;
 
         //10.9
-        private double _speedFactor = 12.2;
+        private double _speedFactor = 11.5;
 
         public bool streamMode = false;
-        public GameModes gameMode = GameModes.None;
+        public Gamemode gameMode;
 
         //Effects
         public bool lightshowIsActivated = false;
@@ -66,29 +68,21 @@ namespace ReplayBattleRoyal
         public System.Windows.Media.Brush NoteColorRightArrow { get; set; }
 
         public int perfectAccAmount = 100;
-        public enum GameModes
-        {
-            None,
-            BattleRoyale,
-            ComboDrop,
-            ComboDropSafe,
-            PerfectAcc
-        }
 
         public MainWindow()
         {
             InitializeComponent();
 
-            _scoresaberClient = new ScoreSaberClient();
+            ScoresaberClient = new ScoreSaberClient();
 
-            Start(297487, 15, country: null, streamMode: true, GameModes.ComboDrop, useBackgroundVideo: true, backgrounVideoDelay: -1625);
+            Start(192587, 40, country: null, streamMode: false, Gamemode.GameModes.BattleRoyale, useBackgroundVideo: true, backgrounVideoDelay: -1625);
         }
 
-        public async Task Start(int songID, int playerAmount = 1, string country = null, bool streamMode = false, GameModes gameMode = GameModes.None, bool useBackgroundVideo = false, int backgrounVideoDelay = 0)
+        public async Task Start(int songID, int playerAmount = 1, string country = null, bool streamMode = false, Gamemode.GameModes selectedGameMode = Gamemode.GameModes.None, bool useBackgroundVideo = false, int backgrounVideoDelay = 0)
         {
             this.streamMode = streamMode;
-            this.gameMode = gameMode;
-
+            gameMode = new Gamemode(this, selectedGameMode);
+            
             NoteColorLeft = System.Windows.Media.Brushes.Red;
             NoteColorRight = System.Windows.Media.Brushes.Blue;
             NoteColorLeftArrow = System.Windows.Media.Brushes.White;
@@ -106,31 +100,27 @@ namespace ReplayBattleRoyal
                 SubsLabelText.Visibility = Visibility.Hidden;
                 TimeLabelText.Visibility = Visibility.Hidden;
                 SongNameLabel.Visibility = Visibility.Hidden;
+                LeadNameLabelText.Visibility = Visibility.Hidden;
             }
             else
             {
                 TransitionStartScreen.Visibility = Visibility.Hidden;
             }
 
-            if (gameMode == GameModes.BattleRoyale)
-            {
-                BatteRoyalTimerLabel.Visibility = Visibility.Visible;
-            }
-            else
-            {
-                BatteRoyalTimerLabel.Visibility = Visibility.Hidden;
-            }
+            gameMode.InitializeGamemode();
+
+
 
             this.backgroundVideoDelay = backgrounVideoDelay;
             this.songID = songID;
             LoadingLabel.Content = $"Loading... Getting song info";
-            leaderboardInfo = await _scoresaberClient.Api.Leaderboards.GetLeaderboardInfoByID(songID);
+            leaderboardInfo = await ScoresaberClient.Api.Leaderboards.GetLeaderboardInfoByID(songID);
 
             this.hashCode = leaderboardInfo.SongHash.ToLower();
             var leaderboardScores = new List<Score>();
 
             //Load leaderboard players 
-            for (var i = 0; i <= Math.Round(playerAmount / 10.0); i++) leaderboardScores.AddRange(await _scoresaberClient.Api.Leaderboards.GetLeaderboardScoresByID(songID, country, page: i + 1));
+            for (var i = 0; i <= Math.Round(playerAmount / 10.0); i++) leaderboardScores.AddRange(await ScoresaberClient.Api.Leaderboards.GetLeaderboardScoresByID(songID, country, page: i + 1));
 
             SongNameLabel.Content = leaderboardInfo.SongName;
 
@@ -151,7 +141,7 @@ namespace ReplayBattleRoyal
             var tasks = new List<Task>();
             for (var i = 0; i < playerAmount; i++)
             {
-                var color = ColorManager.ColorFromHSV(random.Next(150, 400), random.Next(75, 100) / 100.00, 1);
+                var color = ColorManager.ColorFromHSV(random.Next(150, 400), random.Next(90, 100) / 100.00, 1);
 
                 if (i < secureLead)
                 {
@@ -189,49 +179,7 @@ namespace ReplayBattleRoyal
             effectsPanel.Show();
 
             //Show intro
-            string[] text = new string[] {
-                $"This video shows {Players.Count} Beat Saber plays at once",
-                $"This video contains rapid flashes" };
-
-            var textBattleRoyale = new string[] {
-                $"This video shows {Players.Count} Beat Saber plays at once",
-                $"Battle Royale: Every couple seconds a player is eliminated",
-                $"This video contains rapid flashes"
-            };
-
-            var textComboDrop = new string[] {
-                $"This video shows {Players.Count} Beat Saber plays at once",
-                $"Combo Drop: Whenever a player loses combo, the player will get eliminated",
-                $"This video contains rapid flashes"
-            };
-
-            var textPerfectAcc = new string[] {
-                $"This video shows {Players.Count} Beat Saber plays at once",
-                $"Perfect Acc: Whenever a player hits lower as {perfectAccAmount}, the player gets eliminated",
-                $"This video contains rapid flashes"
-            };
-
-            switch (gameMode)
-            {
-                case GameModes.None:
-                    break;
-                case GameModes.BattleRoyale:
-                    text = textBattleRoyale;
-                    break;
-                case GameModes.ComboDrop:
-                    text = textComboDrop;
-                    break;
-                case GameModes.ComboDropSafe:
-                    text = textComboDrop;
-                    break;
-                case GameModes.PerfectAcc:
-                    text = textPerfectAcc;
-                    break;
-                default:
-                    break;
-            }
-
-            if (streamMode) await MediaManager.ShowIntro(this, text);
+            if (streamMode) await MediaManager.ShowIntro(this, gameMode.text);
             LoadingLabel.Visibility = Visibility.Hidden;
             StartPlay();
         }
@@ -248,20 +196,42 @@ namespace ReplayBattleRoyal
             foreach (var player in Players)
             {
                 var corrupt = false;
+                double biggestOffset = 0;
                 for (var i = 0; i < player.ReplayModel.Frames.Count - 1; i++)
                 {
-                    if (player.ReplayModel.Frames[i + 1].A - player.ReplayModel.Frames[i].A > 1) corrupt = true;
+                    if (player.ReplayModel.Frames[i + 1].A == 0 && player.ReplayModel.Frames[i].A == 0) continue;
+                    var offset = player.ReplayModel.Frames[i + 1].A - player.ReplayModel.Frames[i].A;
+                    if (biggestOffset < offset) biggestOffset = offset;
+                    if (offset > 1)
+                    {                        
+                        corrupt = true;
+                        break;
+                    }
                 }
+                player.BiggestFrameOffsetTime = biggestOffset;
                 if ((player.ReplayModel.Frames[100].A - player.ReplayModel.Frames[0].A) < 2 && !corrupt && (player.ReplayModel.Frames[100].A - player.ReplayModel.Frames[0].A) > 0.1)
                 {
-                    if (Players.FirstOrDefault(x => x.hasLead == true) == null)
+                    var currentLead = Players.FirstOrDefault(x => x.hasLead == true);
+                    if (currentLead == null)
                     {
                         player.hasLead = true;
                     }
-                    else player.hasLead = false;
+                    else
+                    {
+                        if(player.BiggestFrameOffsetTime < currentLead.BiggestFrameOffsetTime)
+                        {
+                            currentLead.hasLead = false;
+                            player.hasLead = true;
+                        }
+                        else
+                        {
+                            player.hasLead = false;
+                        }
+                    }
                 }
                 else player.hasLead = false;
             }
+            LeadNameLabelText.Content = Players.FirstOrDefault(x => x.hasLead).Name;
 
             //Start all players in tasks
             var tasks = new List<Task>();
@@ -290,38 +260,13 @@ namespace ReplayBattleRoyal
             PlaySong();
 
             //Start eliminating players if battle royale mode 
-            if (gameMode == GameModes.BattleRoyale) StartEliminatingPlayers(Players.Count, Convert.ToInt32(Math.Round(Players.First().ReplayModel.Frames.Last().A)));
+            if (gameMode.SelectedGamemode == Gamemode.GameModes.BattleRoyale) gameMode.StartBattleRoyal();
 
             TransitionStartScreen.Visibility = Visibility.Hidden;
 
             Task.WaitAll(tasks.ToArray());
         }
-
-        public async Task StartEliminatingPlayers(int playerAmount, int songDuration)
-        {
-            var startAmount = playerAmount;
-            do
-            {
-                var timeToWait = Math.Round((double)(songDuration / startAmount), 1);
-                Dispatcher.Invoke(() => { BatteRoyalTimerLabel.Content = timeToWait; });
-
-                Task.Run(async () =>
-                {
-                    for (var i = 0; i < timeToWait; i++)
-                    {
-                        await Task.Delay(1000);
-                        Dispatcher.Invoke(() => { BatteRoyalTimerLabel.Content = Convert.ToDouble(BatteRoyalTimerLabel.Content) - 1; });
-                    }
-                });
-
-                await Task.Delay(TimeSpan.FromSeconds(timeToWait));
-
-                EliminateLastPlayer();
-
-                playerAmount--;
-            } while (playerAmount > 1);
-        }
-
+       
         public void EliminateLastPlayer()
         {
             Dispatcher.Invoke(() =>
@@ -340,7 +285,7 @@ namespace ReplayBattleRoyal
                 if (playerToRemove == null) return;
 
                 //Perfect acc Mode
-                if (gameMode == GameModes.PerfectAcc || gameMode == GameModes.ComboDropSafe)
+                if (gameMode.SelectedGamemode == Gamemode.GameModes.PerfectAcc || gameMode.SelectedGamemode == Gamemode.GameModes.ComboDropSafe)
                 {
                     var opacity = 0.2;
                     playerToRemove.Opacity = opacity;
@@ -445,11 +390,6 @@ namespace ReplayBattleRoyal
                 if (frame == player.ReplayModel.Frames[player.ReplayModel.Frames.Count() - 2]) break;
                 //Skip paused frames 
                 if (player.ReplayModel.Frames[player.ReplayModel.Frames.IndexOf(frame) + 1].A - frame.A == 0) continue;
-
-                if (player.Name.StartsWith('o'))
-                {
-                    var tds = 2;
-                }
 
                 //Add note if the time has come
                 if (player.ReplayModel.NoteTime.Count != 0)
@@ -565,7 +505,7 @@ namespace ReplayBattleRoyal
                             }
 
                             //Remove player if Perfect mode is on and player hits a low hit.
-                            if (gameMode == GameModes.PerfectAcc)
+                            if (gameMode.SelectedGamemode == Gamemode.GameModes.PerfectAcc)
                             {
                                 if (storedScores.First() < perfectAccAmount) RemovePlayer(player);
                             }
@@ -626,7 +566,7 @@ namespace ReplayBattleRoyal
                             });
 
                             //If ComboDrop gamemode remove player on miss
-                            if (gameMode == GameModes.ComboDrop || gameMode == GameModes.ComboDropSafe)
+                            if (gameMode.SelectedGamemode == Gamemode.GameModes.ComboDrop || gameMode.SelectedGamemode == Gamemode.GameModes.ComboDropSafe)
                             {
                                 if (listViewItems.Count > 1)
                                 {
@@ -690,7 +630,7 @@ namespace ReplayBattleRoyal
                 await Task.Delay(TimeSpan.FromSeconds(timeTillNextFrame) / _speedFactor);
 
                 //Add points to the player and change leaderboard
-                if (count % (5 * Players.Count) == 0)
+                if (count % (8 * Players.Count) == 0)
                 {
 
                     if (frame.A > storedNoteTimes.First())
@@ -712,6 +652,17 @@ namespace ReplayBattleRoyal
                                 for (var i = 0; i < 9 % combo.ToString().Length; i++) spacesc += "  ";
                                 if (player.ReplayModel.Combos.Count() != 0) item.Content = $"{acc}{spacesa}%    {combo}{spacesc}    {player.Name}";
                                 var orderedListview = listViewItems.OrderByDescending(x => x.Content.ToString().Split(" ")[0].Trim());
+
+                                ////Add gradient opacity 
+                                //double opacity = 1 - 1 / (double) orderedListview.Count() * (double)orderedListview.ToList().IndexOf(item);
+                                //player.LeftHand.Opacity = opacity;
+                                //player.RightHand.Opacity = opacity;
+                                //player.LeftHandTip.Opacity = opacity;
+                                //player.RightHandTip.Opacity = opacity;
+                                //player.Head.Opacity = opacity;
+                                //foreach (var trail in player.TrailListLeft) trail.Opacity = opacity;
+                                //foreach (var trail in player.TrailListRight) trail.Opacity = opacity;
+
 
                                 //Give top 30 more attention
                                 //if (hasLead && orderedListview.Count() > 3)
@@ -787,7 +738,7 @@ namespace ReplayBattleRoyal
                     {
                         if (trailIndex == player.TrailListLeft.Count) trailIndex = 0;
 
-                        DrawTrail(player, positionxoldleft, positionyoldleft, positionxoldright, positionyoldright, player.TrailListLeft, player.TrailListRight, trailIndex);
+                        player.DrawTrail(this, positionxoldleft, positionyoldleft, positionxoldright, positionyoldright, trailIndex);
 
                         positionxoldleft = Canvas.GetLeft(player.LeftHandTip);
                         positionyoldleft = Canvas.GetBottom(player.LeftHandTip);
@@ -805,98 +756,10 @@ namespace ReplayBattleRoyal
             if (hasLead) await Dispatcher.Invoke(async () => { await MediaManager.ShowOutro(this); });
         }
 
-        public async void DrawTrail(Player player, double positionxoldleft, double positionyoldleft, double positionxoldright, double positionyoldright, List<Line> trailListLeft, List<Line> trailListRight, int trailIndex)
-        {
-
-            trailListLeft[trailIndex].X1 = positionxoldleft + player.LeftHandTip.Width / 2;
-            trailListLeft[trailIndex].Y1 = CanvasSpace.Height - player.LeftHandTip.Height / 2 - positionyoldleft;
-            trailListLeft[trailIndex].X2 = Canvas.GetLeft(player.LeftHandTip) + player.LeftHandTip.Width / 2;
-            trailListLeft[trailIndex].Y2 = CanvasSpace.Height - player.LeftHandTip.Height / 2 - Canvas.GetBottom(player.LeftHandTip);
-
-            trailListRight[trailIndex].X1 = positionxoldright + player.RightHandTip.Width / 2;
-            trailListRight[trailIndex].Y1 = CanvasSpace.Height - player.RightHandTip.Height / 2 - positionyoldright;
-            trailListRight[trailIndex].X2 = Canvas.GetLeft(player.RightHandTip) + player.RightHandTip.Width / 2;
-            trailListRight[trailIndex].Y2 = CanvasSpace.Height - player.RightHandTip.Height / 2 - Canvas.GetBottom(player.RightHandTip);
-        }
-
         public async Task<bool> LoadInPlayer(string playerID, System.Windows.Media.Color color)
         {
-            try
-            {
-                var playerInfo = await _scoresaberClient.Api.Players.GetPlayer(Convert.ToInt64(playerID));
-                var replayModel = await GetReplayModel($"https://sspreviewdecode.azurewebsites.net/?playerID={playerID}&songID={songID}");
-
-                if (replayModel == null || playerInfo == null) return false;
-                if (replayModel.Frames == null || replayModel.Info.LeftHanded == true) return false; //TODO: include left hand mode
-                //Remove player if the frames count don't match others
-                if (Players.Count > 0) if (replayModel.Frames.Last().A + 10 < Players.Average(x => x.ReplayModel.Frames.Last().A)) return false;
-                //Remove player if scores are bugged out 
-                if (replayModel.Scores.Sum() <= 0) return false;
-                //Remove player if start frame is way too late 
-                if (replayModel.Frames.First(x => x.A > 0).A > 10) return false;
-
-
-                await Dispatcher.Invoke(async () =>
-                {
-
-
-                    var stroke = new SolidColorBrush(color);
-                    var leftHand = new Ellipse() { Stroke = stroke, Fill = stroke, Width = 25, Height = 25 };
-                    var rightHand = new Ellipse() { Stroke = stroke, Fill = stroke, Width = 25, Height = 25 };
-                    var leftHandTip = new Ellipse() { Stroke = stroke, Fill = stroke, Width = 15, Height = 15 };
-                    var rightHandTip = new Ellipse() { Stroke = stroke, Fill = stroke, Width = 15, Height = 15 };
-                    var head = new System.Windows.Shapes.Rectangle() { Stroke = stroke, StrokeThickness = 4, Width = 50, Height = 25, RadiusX = 2, RadiusY = 2 };
-                    CanvasSpace.Children.Add(leftHand);
-                    CanvasSpace.Children.Add(rightHand);
-                    CanvasSpace.Children.Add(head);
-                    //CanvasSpace.Children.Add(leftHandTip);
-                    //CanvasSpace.Children.Add(rightHandTip);
-
-                    var player = new Player() { ID = playerID, LeftHand = leftHand, RightHand = rightHand, LeftHandTip = leftHandTip, RightHandTip = rightHandTip, ReplayModel = replayModel, Name = playerInfo.Name, color = color, Head = head };
-                    var listViewItem = new ListViewItem() { Content = $"0 0           {playerInfo.Name}", Background = player.LeftHand.Stroke, FontSize = 30, FontFamily = new System.Windows.Media.FontFamily("Microsoft YaHei UI") };
-
-                    player.TrailListLeft = new List<Line>();
-                    player.TrailListRight = new List<Line>();
-                    var trailMax = 3;
-                    for (var i = 0; i < trailMax; i++)
-                    {
-
-                        var left = new Line()
-                        {
-                            Stroke = player.LeftHand.Stroke,
-                            Fill = player.LeftHand.Stroke,
-                            StrokeThickness = 10,
-                            StrokeStartLineCap = PenLineCap.Round,
-                            StrokeEndLineCap = PenLineCap.Round,
-                            Opacity = 1
-                        };
-                        var right = new Line()
-                        {
-                            Stroke = player.LeftHand.Stroke,
-                            Fill = player.LeftHand.Stroke,
-                            StrokeThickness = 10,
-                            StrokeStartLineCap = PenLineCap.Round,
-                            StrokeEndLineCap = PenLineCap.Round,
-                            Opacity = 1
-                        };
-
-                        player.TrailListLeft.Add(left);
-                        player.TrailListRight.Add(right);
-                        CanvasSpace.Children.Add(left);
-                        CanvasSpace.Children.Add(right);
-
-                    }
-
-                    Players.Add(player);
-                    listViewItems.Add(listViewItem);
-                });
-
-                return true;
-            }
-            catch (Exception ex)
-            {
-                return false;
-            }
+            var player = new Player(playerID, color);
+            return await player.LoadPlayer(this);
         }
 
         public async void AddNote(string noteInfo, double delay = 0)
@@ -990,52 +853,6 @@ namespace ReplayBattleRoyal
                 CanvasSpace.Children.Remove(arrow);
                 CanvasSpace.Children.Remove(dot);
             });
-        }
-
-
-        public class Player
-        {
-            public string ID { get; set; }
-            public string Name { get; set; }
-
-            public System.Windows.Media.Color color { get; set; }
-
-            public bool hasLead { get; set; }
-            public System.Windows.Shapes.Rectangle Head { get; set; }
-            public Ellipse LeftHand { get; set; }
-
-            public Ellipse RightHand { get; set; }
-            public Ellipse LeftHandTip { get; set; }
-            public Ellipse RightHandTip { get; set; }
-
-            public ReplayModel ReplayModel { get; set; }
-
-            public List<Line> TrailListLeft { get; set; }
-            public List<Line> TrailListRight { get; set; }
-        }
-
-        public async Task<ReplayModel> GetReplayModel(string url)
-        {
-            //Get content from website as string
-            try
-            {
-                using (var client = new HttpClient())
-                {
-                    var response = await client.GetAsync(url);
-                    if (response.StatusCode == HttpStatusCode.OK)
-                    {
-                        var content = await response.Content.ReadAsStringAsync();
-                        var f = (string)JsonConvert.DeserializeObject(content);
-                        var jsonObject = JsonConvert.DeserializeObject<ReplayModel>(f);
-                        return jsonObject;
-                    }
-                }
-                return null;
-            }
-            catch (Exception ex)
-            {
-                return null;
-            }
         }
 
         public MapDetailsModel GetMapDetailsModel()

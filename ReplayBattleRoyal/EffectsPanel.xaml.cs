@@ -1,4 +1,5 @@
-﻿using ReplayBattleRoyal.Managers;
+﻿using ReplayBattleRoyal.Entities;
+using ReplayBattleRoyal.Managers;
 using System;
 using System.Collections.Generic;
 using System.Linq;

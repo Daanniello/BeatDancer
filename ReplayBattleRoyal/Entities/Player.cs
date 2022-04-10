@@ -78,7 +78,6 @@ namespace ReplayBattleRoyal.Entities
 
                     //If someone has the same name, add a number at the end of it.
                     if (mainWindow.Players.FirstOrDefault(x => x.Name.Split(" *(")[0] == Name) != null) Name += $" *({mainWindow.Players.Where(x => x.Name.Split(" *(")[0] == Name).Count()})";
-                    var listViewItem = new ListViewItem() { Content = $"0 0           {Name}", Background = LeftHand.Stroke, FontSize = 30, FontFamily = new System.Windows.Media.FontFamily("Microsoft YaHei UI") };
 
                     TrailListLeft = new List<Line>();
                     TrailListRight = new List<Line>();
@@ -109,11 +108,11 @@ namespace ReplayBattleRoyal.Entities
                         TrailListRight.Add(right);
                         mainWindow.CanvasSpace.Children.Add(left);
                         mainWindow.CanvasSpace.Children.Add(right);
-
                     }
 
                     mainWindow.Players.Add(this);
-                    mainWindow.listViewItems.Add(listViewItem);
+                    mainWindow.leaderboard.AddPlayer(Name, leftHand.Stroke);
+                    mainWindow.leaderboard.RefreshLeaderboard();
                 });
 
                 return true;

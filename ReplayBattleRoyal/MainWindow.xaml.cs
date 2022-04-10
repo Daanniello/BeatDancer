@@ -15,16 +15,14 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using static ScoreSaberLib.Models.LeaderboardInfoModel;
 using static ScoreSaberLib.Models.LeaderboardScoresModel;
-using Brushes = System.Windows.Media.Brushes;
+using Leaderboard = ReplayBattleRoyal.Entities.Leaderboard;
 
 namespace ReplayBattleRoyal
 {
@@ -39,8 +37,8 @@ namespace ReplayBattleRoyal
         private static MediaPlayer mediaPlayer = new MediaPlayer();
         private double songTime = 0;
         public ScoreSaberClient ScoresaberClient;
-        public List<ListViewItem> listViewItems = new List<ListViewItem>();
-        private Leaderboard leaderboardInfo;
+        public Entities.Leaderboard leaderboard;
+        private ScoreSaberLib.Models.LeaderboardInfoModel.Leaderboard leaderboardInfo;
         private Random random = new Random();
         private EffectsPanel effectsPanel;
         private MapDetailsModel mapDetails;
@@ -82,6 +80,7 @@ namespace ReplayBattleRoyal
         {
             this.streamMode = streamMode;
             gameMode = new Gamemode(this, selectedGameMode);
+            leaderboard = new Leaderboard(this);
             
             NoteColorLeft = System.Windows.Media.Brushes.Red;
             NoteColorRight = System.Windows.Media.Brushes.Blue;
@@ -186,7 +185,7 @@ namespace ReplayBattleRoyal
 
         public async void StartPlay()
         {
-            ListViewPlayers.ItemsSource = listViewItems;
+            
 
             var width = CanvasSpace.Width;
             var height = CanvasSpace.Height;
@@ -271,9 +270,7 @@ namespace ReplayBattleRoyal
         {
             Dispatcher.Invoke(() =>
             {
-                var toRemove = listViewItems.OrderByDescending(x => x.Content.ToString().Split(" ")[0].Trim()).Last();
-                var playerToRemove = Players.FirstOrDefault(x => toRemove.Content.ToString().Contains(x.Name));
-                RemovePlayer(playerToRemove);
+                RemovePlayer(leaderboard.GetLastPlayer());
             });
         }
 
@@ -281,7 +278,7 @@ namespace ReplayBattleRoyal
         {
             Dispatcher.Invoke(() =>
             {
-                var playerToRemove = listViewItems.FirstOrDefault(x => x.Content.ToString().Contains(player.Name));
+                var playerToRemove = leaderboard.GetPlayer(player.Name);
                 if (playerToRemove == null) return;
 
                 //Perfect acc Mode
@@ -301,7 +298,7 @@ namespace ReplayBattleRoyal
                     return;
                 }
 
-                listViewItems.Remove(playerToRemove);
+                leaderboard.RemovePlayer(playerToRemove);                
                 if (!player.hasLead) Players.Remove(player);
                 CanvasSpace.Children.Remove(player.LeftHand);
                 CanvasSpace.Children.Remove(player.RightHand);
@@ -555,7 +552,7 @@ namespace ReplayBattleRoyal
                         {
                             Dispatcher.Invoke(async () =>
                             {
-                                var item = listViewItems.FirstOrDefault(x => x.Content.ToString().Contains(player.Name));
+                                var item = leaderboard.GetPlayer(player.Name);
                                 if (item != null)
                                 {
                                     item.BorderBrush = System.Windows.Media.Brushes.Red;
@@ -568,7 +565,7 @@ namespace ReplayBattleRoyal
                             //If ComboDrop gamemode remove player on miss
                             if (gameMode.SelectedGamemode == Gamemode.GameModes.ComboDrop || gameMode.SelectedGamemode == Gamemode.GameModes.ComboDropSafe)
                             {
-                                if (listViewItems.Count > 1)
+                                if (leaderboard.listViewItems.Count > 1)
                                 {
                                     Dispatcher.Invoke(() => RemovePlayer(player));
                                     continue;
@@ -640,7 +637,7 @@ namespace ReplayBattleRoyal
 
                         Dispatcher.Invoke(() =>
                         {
-                            var item = listViewItems.FirstOrDefault(x => x.Content.ToString().Contains(player.Name));
+                            var item = leaderboard.GetPlayer(player.Name);
                             if (item != null && player.ReplayModel.NoteTime.Count() != 0)
                             {
                                 float acc = (float)Math.Round((currentScore * 100) / currentMaxScore, 2);
@@ -651,8 +648,8 @@ namespace ReplayBattleRoyal
                                 for (var i = 0; i < 5 % acc.ToString().Length; i++) spacesa += "  ";
                                 for (var i = 0; i < 9 % combo.ToString().Length; i++) spacesc += "  ";
                                 if (player.ReplayModel.Combos.Count() != 0) item.Content = $"{acc}{spacesa}%    {combo}{spacesc}    {player.Name}";
-                                var orderedListview = listViewItems.OrderByDescending(x => x.Content.ToString().Split(" ")[0].Trim());
-
+                                
+                                leaderboard.OrderLeaderboardByAcc();
                                 ////Add gradient opacity 
                                 //double opacity = 1 - 1 / (double) orderedListview.Count() * (double)orderedListview.ToList().IndexOf(item);
                                 //player.LeftHand.Opacity = opacity;
@@ -683,9 +680,6 @@ namespace ReplayBattleRoyal
                                 //        count++;
                                 //    }
                                 //}                               
-
-                                ListViewPlayers.ItemsSource = orderedListview;
-                                ListViewPlayers.Items.Refresh();
                             }
                         });
                     }

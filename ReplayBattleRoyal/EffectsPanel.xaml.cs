@@ -85,7 +85,7 @@ namespace ReplayBattleRoyal
                 ChangeSize(player, originalSize.FirstOrDefault(x => x.Key == player).Value);
                 SetTrail(player, originalTrailSize);
 
-                var item = mainWindow.listViewItems.FirstOrDefault(x => x.Content.ToString().Contains(player.Name));
+                var item = mainWindow.leaderboard.GetPlayer(player.Name);
                 if(item != null) item.Background = originalColors.FirstOrDefault(x => x.Key == player).Value;
             }
 
@@ -137,7 +137,7 @@ namespace ReplayBattleRoyal
 
         public void ChangeLeaderboardColor(Player player, Brush color)
         {
-            var item = mainWindow.listViewItems.FirstOrDefault(x => x.Content.ToString().Contains(player.Name));
+            var item = mainWindow.leaderboard.GetPlayer(player.Name);
             if(item != null) item.Background = color;
         }
 

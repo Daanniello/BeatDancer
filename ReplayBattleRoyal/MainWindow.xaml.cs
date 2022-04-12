@@ -1,26 +1,14 @@
-﻿using FFMpegCore;
-using FFMpegCore.Enums;
-using Newtonsoft.Json;
-using ReplayBattleRoyal.Entities;
+﻿using ReplayBattleRoyal.Entities;
 using ReplayBattleRoyal.GameModes;
 using ReplayBattleRoyal.Managers;
-using ReplayBattleRoyal.Models;
 using ScoreSaberLib;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Drawing;
-using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System.Windows.Shapes;
-using static ScoreSaberLib.Models.LeaderboardInfoModel;
 using static ScoreSaberLib.Models.LeaderboardScoresModel;
 using Leaderboard = ReplayBattleRoyal.Entities.Leaderboard;
 
@@ -34,37 +22,26 @@ namespace ReplayBattleRoyal
         public int songID;
         public string hashCode;
         public List<Player> Players = new List<Player>();
-        private static MediaPlayer mediaPlayer = new MediaPlayer();
-        private double songTime = 0;
+        public double songTime = 0;
         public ScoreSaberClient ScoresaberClient;
         public Entities.Leaderboard leaderboard;
-        private ScoreSaberLib.Models.LeaderboardInfoModel.Leaderboard leaderboardInfo;
+        public ScoreSaberLib.Models.LeaderboardInfoModel.Leaderboard leaderboardInfo;
         private Random random = new Random();
         private EffectsPanel effectsPanel;
-        private MapDetailsModel mapDetails;
-        private Bitmap backgroundImageBitmap;
-        private Bitmap originalImage;
-        private ImageBrush backgroundBrush;
-        private ColorManager.HSVColor[,] originalPixels;
-        private List<Grid> lightEventBackgrounds = new List<Grid>();
         private int backgroundVideoDelay;
-        private MapInfoModel mapInfoModel;
+        public PlayInstance playInstance;
 
         private int playerStartAmount;
 
         //10.9
-        private double _speedFactor = 11.5;
+        private double _speedFactor = 11;
+        private double _startSpeedFactor;
 
         public bool streamMode = false;
         public Gamemode gameMode;
 
         //Effects
         public bool lightshowIsActivated = false;
-        public System.Windows.Media.Brush NoteColorLeft { get; set; }
-        public System.Windows.Media.Brush NoteColorRight { get; set; }
-        public System.Windows.Media.Brush NoteColorLeftArrow { get; set; }
-        public System.Windows.Media.Brush NoteColorRightArrow { get; set; }
-
         public int perfectAccAmount = 100;
 
         public MainWindow()
@@ -73,7 +50,7 @@ namespace ReplayBattleRoyal
 
             ScoresaberClient = new ScoreSaberClient();
 
-            Start(192587, 40, country: null, streamMode: false, Gamemode.GameModes.BattleRoyale, useBackgroundVideo: true, backgrounVideoDelay: -1625);
+            Start(408140, 15, country: null, streamMode: false, Gamemode.GameModes.None, useBackgroundVideo: true, backgrounVideoDelay: -2375);
         }
 
         public async Task Start(int songID, int playerAmount = 1, string country = null, bool streamMode = false, Gamemode.GameModes selectedGameMode = Gamemode.GameModes.None, bool useBackgroundVideo = false, int backgrounVideoDelay = 0)
@@ -81,11 +58,8 @@ namespace ReplayBattleRoyal
             this.streamMode = streamMode;
             gameMode = new Gamemode(this, selectedGameMode);
             leaderboard = new Leaderboard(this);
-            
-            NoteColorLeft = System.Windows.Media.Brushes.Red;
-            NoteColorRight = System.Windows.Media.Brushes.Blue;
-            NoteColorLeftArrow = System.Windows.Media.Brushes.White;
-            NoteColorRightArrow = System.Windows.Media.Brushes.White;
+            playInstance = new PlayInstance(this);
+            _startSpeedFactor = _speedFactor;           
 
             if (streamMode)
             {
@@ -127,7 +101,7 @@ namespace ReplayBattleRoyal
             gridView.Columns.First().Width = 550;
 
             LoadingLabel.Content = $"Loading... preparing song file";
-            await PrepareSongFile(hashCode, useBackgroundVideo);
+            await playInstance.PrepareSongFile(hashCode, useBackgroundVideo);
 
             //Load in all players 
             LoadingLabel.Content = $"Loading... start loading players";
@@ -157,7 +131,7 @@ namespace ReplayBattleRoyal
                         Dispatcher.Invoke(() => { LoadingLabel.Content = $"Loading {playersLoaded}/{playerCount}..."; });
                     }));
                 }
-                await Task.Delay(2000);
+                await Task.Delay(4000);
             }
             await Task.WhenAll(tasks);
 
@@ -178,15 +152,13 @@ namespace ReplayBattleRoyal
             effectsPanel.Show();
 
             //Show intro
-            if (streamMode) await MediaManager.ShowIntro(this, gameMode.text);
+            if (streamMode) await MediaManager.ShowIntro(this, gameMode.GetIntroText());
             LoadingLabel.Visibility = Visibility.Hidden;
             StartPlay();
         }
 
         public async void StartPlay()
         {
-            
-
             var width = CanvasSpace.Width;
             var height = CanvasSpace.Height;
 
@@ -230,7 +202,11 @@ namespace ReplayBattleRoyal
                 }
                 else player.hasLead = false;
             }
-            LeadNameLabelText.Content = Players.FirstOrDefault(x => x.hasLead).Name;
+
+            var leadPlayer = Players.FirstOrDefault(x => x.hasLead);
+            if(leadPlayer != null) LeadNameLabelText.Content = leadPlayer.Name;
+            else LeadNameLabelText.Content = "NO LEAD";
+
 
             //Start all players in tasks
             var tasks = new List<Task>();
@@ -256,7 +232,7 @@ namespace ReplayBattleRoyal
             //Start all players
             tasks.ForEach(task => { task.Start(); });
             //Play Song
-            PlaySong();
+            playInstance.PlaySong();
 
             //Start eliminating players if battle royale mode 
             if (gameMode.SelectedGamemode == Gamemode.GameModes.BattleRoyale) gameMode.StartBattleRoyal();
@@ -360,7 +336,7 @@ namespace ReplayBattleRoyal
             var storedScores = new List<long>();
             storedScores.AddRange(player.ReplayModel.Scores.ToArray());
             var storedLightshowData = new List<Event>();
-            storedLightshowData.AddRange(mapDetails.Events.ToArray());
+            storedLightshowData.AddRange(playInstance.mapDetails.Events.ToArray());
 
             //Add trails for every player 
 
@@ -409,7 +385,7 @@ namespace ReplayBattleRoyal
                             if (hasLead)
                             {
                                 var note = player.ReplayModel.NoteInfos.First();
-                                AddNote(note, noteAnimationDelay);
+                                playInstance.AddNote(note, noteAnimationDelay);
                                 player.ReplayModel.NoteInfos.Remove(note);
                             }
                             storedNoteTimesHitsound.Remove(noteTimeHitsound);
@@ -435,13 +411,13 @@ namespace ReplayBattleRoyal
                                     {
                                         Dispatcher.Invoke(() =>
                                         {
-                                            lightEventBackgrounds[(int)lightdata.Type].Visibility = Visibility.Visible;
+                                            playInstance.lightEventBackgrounds[(int)lightdata.Type].Visibility = Visibility.Visible;
                                             //lightEventBackgrounds[(int)lightdata.Type].Opacity = lightdata.Value == 0 ? (double)0.1 : 1 / (double)lightdata.Value;
                                         });
                                         await Task.Delay(100);
                                         Dispatcher.Invoke(() =>
                                         {
-                                            lightEventBackgrounds[(int)lightdata.Type].Visibility = Visibility.Hidden;
+                                            playInstance.lightEventBackgrounds[(int)lightdata.Type].Visibility = Visibility.Hidden;
                                             //lightEventBackgrounds[(int)lightdata.Type].Opacity = 0.1;
                                         });
                                     });
@@ -755,310 +731,5 @@ namespace ReplayBattleRoyal
             var player = new Player(playerID, color);
             return await player.LoadPlayer(this);
         }
-
-        public async void AddNote(string noteInfo, double delay = 0)
-        {
-            var x = Convert.ToInt32(noteInfo.Substring(0, 1));
-            var y = Convert.ToInt32(noteInfo.Substring(1, 1));
-            var direction = Convert.ToInt32(noteInfo.Substring(2, 1));
-            var type = Convert.ToInt32(noteInfo.Substring(3, 1));
-
-            Dispatcher.Invoke(async () =>
-            {
-                var rec = new System.Windows.Shapes.Rectangle() { Stroke = System.Windows.Media.Brushes.White, Width = 110, Height = 110, Fill = type == 0 ? NoteColorLeft : NoteColorRight, Opacity = 1, RadiusX = 10, RadiusY = 10 };
-
-                var converter = TypeDescriptor.GetConverter(typeof(Geometry));
-                string pathData = "M50,50 L150,90 L250,50 L250,30 L50,30 Z";
-                var arrow = new System.Windows.Shapes.Path() { Data = (Geometry)converter.ConvertFrom(pathData), Fill = type == 0 ? NoteColorLeftArrow : NoteColorRightArrow, Stroke = System.Windows.Media.Brushes.White, StrokeThickness = 2, Width = 100, Height = 30, Stretch = Stretch.Fill };
-
-                var dot = new Ellipse() { Fill = System.Windows.Media.Brushes.White, Width = 50, Height = 50 };
-
-                CanvasSpace.Children.Add(rec);
-
-                var posx = CanvasSpace.Width / 4 * x + 110;
-                var posy = CanvasSpace.Height / 2.5 * y + 100;
-                var posxdir = posx + 15;
-                var posydir = posy + 65;
-
-                Canvas.SetLeft(rec, posx);
-                Canvas.SetBottom(rec, posy);
-
-                //Dot note
-                if (direction == 8)
-                {
-                    CanvasSpace.Children.Add(dot);
-                    Canvas.SetLeft(dot, posx + 30);
-                    Canvas.SetBottom(dot, posy + 30);
-                }
-                else
-                {
-                    CanvasSpace.Children.Add(arrow);
-                    Canvas.SetLeft(arrow, posxdir);
-                    Canvas.SetBottom(arrow, posydir);
-                }
-
-                if (direction == 0) arrow.RenderTransform = new RotateTransform(180, 48, 35);//up
-                if (direction == 1) arrow.RenderTransform = new RotateTransform(0, -45, -20); //down 
-                if (direction == 2) arrow.RenderTransform = new RotateTransform(90, 50, 28); //left 
-                if (direction == 3) arrow.RenderTransform = new RotateTransform(270, 48, 33);//right
-
-                if (direction == 4)//upleft
-                {
-                    rec.RenderTransform = new RotateTransform(315, rec.Width / 2, rec.Height / 2);
-                    arrow.RenderTransform = new RotateTransform(135, rec.Width / 2 - 0, rec.Height / 2 - 25);
-                }
-                if (direction == 5)//upright
-                {
-                    rec.RenderTransform = new RotateTransform(45, rec.Width / 2, rec.Height / 2);
-                    arrow.RenderTransform = new RotateTransform(225, rec.Width / 2 - 15, rec.Height / 2 - 18);
-                }
-                if (direction == 6)//downleft
-                {
-                    rec.RenderTransform = new RotateTransform(45, rec.Width / 2, rec.Height / 2);
-                    arrow.RenderTransform = new RotateTransform(45, rec.Width / 2 - 5, rec.Height / 2 - 25);
-                }
-                if (direction == 7)//downright
-                {
-                    rec.RenderTransform = new RotateTransform(315, rec.Width / 2, rec.Height / 2);
-                    arrow.RenderTransform = new RotateTransform(315, rec.Width / 2 - 35, rec.Height / 2 - 30);
-                }
-
-
-                rec.Opacity = 0.15;
-                for (var i = 0; i < 3; i++)
-                {
-                    await Task.Delay(50 / 3);
-                    rec.Width += 10;
-                    rec.Height += 10;
-                    Canvas.SetLeft(rec, posx - 5 * i);
-                    Canvas.SetBottom(rec, posy - 5 * i);
-                    Canvas.SetLeft(arrow, posxdir - 5 * i);
-                    Canvas.SetBottom(arrow, posydir - 5 * i);
-                }
-
-                //70
-                var soundDelay = 0.070;
-                if (delay - soundDelay > 0) await Task.Delay(TimeSpan.FromSeconds(delay - soundDelay));
-                //AudioManager.PlayHitSound();
-                rec.Opacity = 1;
-                await Task.Delay(TimeSpan.FromSeconds(soundDelay));
-
-                CanvasSpace.Children.Remove(rec);
-                CanvasSpace.Children.Remove(arrow);
-                CanvasSpace.Children.Remove(dot);
-            });
-        }
-
-        public MapDetailsModel GetMapDetailsModel()
-        {
-            var json = File.ReadAllText(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{ leaderboardInfo.Difficulty.DifficultyRaw.Replace("_", "").Replace("Solo", "").Replace("Standard", "")}.dat");
-            var mapDetails = JsonConvert.DeserializeObject<MapDetailsModel>(json);
-            return mapDetails;
-        }
-
-        public async Task PrepareSongFile(string hash, bool useBackgroundVideo = false)
-        {
-            if (!File.Exists(AppContext.BaseDirectory + @$"Audio\ZipTemp/Download/{hash}.zip"))
-            {
-                using (var webClient = new WebClient())
-                {
-                    webClient.Headers.Add("Accept: text/html, application/xhtml+xml, */*");
-                    webClient.Headers.Add("User-Agent: Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)");
-                    webClient.DownloadFileAsync(new Uri($"https://eu.cdn.beatsaver.com/{hash.ToLower()}.zip"), $@"Audio\ZipTemp/Download/{hash}.zip");
-                    do
-                    {
-                        await Task.Delay(100);
-                    } while (webClient.IsBusy);
-                    webClient.Dispose();
-                }
-            }
-
-            using (ZipArchive archive = ZipFile.OpenRead(AppContext.BaseDirectory + $@"Audio/ZipTemp/Download/{hash}.zip"))
-            {
-
-                foreach (ZipArchiveEntry entry in archive.Entries)
-                {
-                    if (entry.FullName.Replace("Standard", "").Contains($"{leaderboardInfo.Difficulty.DifficultyRaw.Replace("_", "").Replace("Solo", "").Replace("Standard", "")}.dat"))
-                    {
-                        if (File.Exists(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{leaderboardInfo.Difficulty.DifficultyRaw.Replace("_", "").Replace("Solo", "").Replace("Standard", "")}.dat")) File.Delete(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{leaderboardInfo.Difficulty.DifficultyRaw.Replace("_", "").Replace("Solo", "").Replace("Standard", "")}.dat");
-                        entry.ExtractToFile(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{leaderboardInfo.Difficulty.DifficultyRaw.Replace("_", "").Replace("Solo", "").Replace("Standard", "")}.dat");
-                    }
-                    if (entry.FullName.Contains($"info.dat"))
-                    {
-                        if (File.Exists(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/info_{songID}.dat")) File.Delete(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/info_{songID}.dat");
-                        entry.ExtractToFile(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/info_{songID}.dat");
-                    }
-                    if (entry.FullName.Contains(".egg"))
-                    {
-                        if (File.Exists(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{songID}.egg")) File.Delete(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{songID}.egg");
-                        entry.ExtractToFile(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{songID}.egg");
-                    }
-                    if (entry.FullName.Contains(".jpg") || entry.FullName.Contains(".png") && !File.Exists(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{songID}.jpg"))
-                    {
-                        if (entry.FullName.Contains("cover"))
-                        {
-                            if (File.Exists(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{songID}.jpg")) File.Delete(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{songID}.jpg");
-                            entry.ExtractToFile(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{songID}.jpg");
-                        }
-                    }
-                }
-            }
-
-            FFMpegCore.GlobalFFOptions.Configure(new FFOptions { BinaryFolder = AppContext.BaseDirectory + @"Audio/ffmpeg" });
-            FFMpegCore.FFMpegArguments.FromFileInput(AppContext.BaseDirectory + $@"Audio\ZipTemp/Extract/{songID}.egg")
-                .OutputToFile(AppContext.BaseDirectory + $@"Audio\{songID}.mp3", true, options =>
-                options.WithAudioCodec(audioCodec: AudioCodec.LibMp3Lame))
-                .ProcessSynchronously();
-
-            //Get the NoteJumpSpeedBeatOffset
-            var mapInfoJson = File.ReadAllText(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/info_{songID}.dat");
-            mapInfoModel = JsonConvert.DeserializeObject<MapInfoModel>(mapInfoJson);
-            
-            if (useBackgroundVideo)
-            {
-                if (File.Exists(GlobalConfig.BasePath + "/Resources/Vids/" + $"{songID}.mp4"))
-                {
-                    BackgroundVideo.Source = new Uri(GlobalConfig.BasePath + "/Resources/Vids/" + $"{songID}.mp4");
-                    BackgroundVideo.Stretch = Stretch.Fill;
-                    BackgroundVideo.Opacity = 0.22;
-                    BackgroundVideo.Volume = 0;
-                    BackgroundVideo.Play();
-                    await Task.Delay(10000);
-                    BackgroundVideo.Position = TimeSpan.FromSeconds(0);
-                    BackgroundVideo.Pause();
-                }
-            }
-            else
-            {
-                if (File.Exists(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{songID}.jpg"))
-                {
-                    backgroundBrush = new ImageBrush();
-                    var bitmap = new Bitmap(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{songID}.jpg");
-                    originalImage = bitmap;
-                    backgroundImageBitmap = MediaManager.GrayScaleFilter(bitmap);
-
-
-                    //Set main background
-                    var imageSource = MediaManager.BitmapToImageSource(backgroundImageBitmap);
-                    backgroundBrush.ImageSource = imageSource;
-                    //0.04
-                    backgroundBrush.Opacity = 0.06;
-                    MainGrid.Background = backgroundBrush;
-
-                    //Set original pixels
-                    originalPixels = new ColorManager.HSVColor[originalImage.Width, originalImage.Height];
-                    for (var y = 0; y < originalImage.Height; y++)
-                    {
-                        for (var x = 0; x < originalImage.Width; x++)
-                        {
-                            var color = originalImage.GetPixel(x, y);
-                            //Testing-------------
-                            //var color2 = System.Drawing.Color.FromArgb(0, 0, 0);
-                            //var color3 = System.Drawing.Color.FromArgb(0, 0, 0);
-                            //if (x - 1 > 0 && y - 1 > 0) color2 = originalImage.GetPixel(x - 1, y - 1);
-                            //if (x - 2 > 0 && y - 2 > 0) color3 = originalImage.GetPixel(x - 2, y - 2);
-
-                            //var newColor = System.Drawing.Color.FromArgb(
-                            //    color.R / 3 + color2.R / 3 + color3.R / 3,
-                            //    color.G / 3 + color2.G / 3 + color3.G / 3,
-                            //    color.B / 3 + color2.B / 3 + color3.B / 3
-                            //    );
-
-                            //-----------------------
-                            var hsv = ColorManager.ColorToHSV(color);
-                            originalPixels[x, y] = hsv;
-                        }
-                    }
-
-                    //Add different types of background images to lightshow list
-                    var amount = 14;
-                    var offset = 360 / amount;
-                    for (var i = 0; i < amount; i++)
-                    {
-                        double minSat = 0.05;
-                        double minVal = 0.05;
-                        double maxSat = 1;
-                        double maxVal = 1;
-
-                        var piece = 360 / amount;
-                        var share = 360 / amount * i;
-
-                        var bmGrayScale = (Bitmap)backgroundImageBitmap.Clone();
-                        var randomRange = random.Next(0, 360);
-
-                        var coloredPixelCount = 0;
-                        for (var y = 0; y < bmGrayScale.Height; y++)
-                        {
-                            for (var x = 0; x < bmGrayScale.Width; x++)
-                            {
-                                var hue = originalPixels[x, y].Hue;
-                                var sat = originalPixels[x, y].Saturation;
-                                var val = originalPixels[x, y].Value;
-                                if (hue > share - (piece / 2) - offset && hue < share + (piece / 2) + offset && sat > minSat && val > minVal && val < maxVal && sat < maxSat) coloredPixelCount++;
-                            }
-                        }
-
-                        maxSat = 1 - ((coloredPixelCount * (maxSat * 1)) / (bmGrayScale.Height * bmGrayScale.Width));
-                        maxVal = 1 - ((coloredPixelCount * (maxVal * 1)) / (bmGrayScale.Height * bmGrayScale.Width));
-
-                        for (var y = 0; y < bmGrayScale.Height; y++)
-                        {
-                            for (var x = 0; x < bmGrayScale.Width; x++)
-                            {
-                                var hue = originalPixels[x, y].Hue;
-                                var sat = originalPixels[x, y].Saturation;
-                                var val = originalPixels[x, y].Value;
-
-                                if (hue > share - (piece / 2) - offset && hue < share + (piece / 2) + offset && sat > minSat && val > minVal && val < maxVal && sat < maxSat)
-                                {
-                                    var mediaColor = ColorManager.ColorFromHSV(share, 1, 1);
-                                    bmGrayScale.SetPixel(x, y, System.Drawing.Color.FromArgb(mediaColor.R, mediaColor.G, mediaColor.B));
-                                }
-                                else
-                                {
-                                    var pix = bmGrayScale.GetPixel(x, y);
-                                    bmGrayScale.SetPixel(x, y, System.Drawing.Color.Transparent);
-                                }
-                            }
-                        }
-                        var background = new ImageBrush() { ImageSource = MediaManager.ToBitmapImage(bmGrayScale) };
-                        var grid = new Grid() { Background = background, Visibility = Visibility.Hidden, Opacity = 0.1 };
-                        LightshowOverlayGrid.Children.Add(grid);
-                        lightEventBackgrounds.Add(grid);
-                    }
-                }
-                else
-                {
-                    CanvasSpace.Background = System.Windows.Media.Brushes.Black;
-                }
-            }
-
-            mapDetails = GetMapDetailsModel();
-
-
-            await Task.Delay(2000);
-            File.Delete(AppContext.BaseDirectory + $@"Audio\ZipTemp/Extract/{songID}.egg");
-        }
-
-        public async Task PlaySong()
-        {
-            mediaPlayer.Open(new Uri(AppContext.BaseDirectory + $@"Audio\{songID}.mp3"));
-            mediaPlayer.Play();
-
-            //var noteTimings = new List<double>();
-            //foreach (var time in Players.First().ReplayModel.NoteTime) noteTimings.Add(time);
-            //AudioManager.PlayHitSounds(noteTimings);
-
-            var sw = new Stopwatch();
-            sw.Start();
-
-            while (true)
-            {
-                songTime = sw.ElapsedMilliseconds / 1000.000;
-                Dispatcher.Invoke(() => { SongTimeLabel.Content = songTime; });
-                await Task.Delay(100);
-            }
-        }
-
     }
 }

@@ -13,14 +13,15 @@ namespace ReplayBattleRoyal.GameModes
         public GameModes SelectedGamemode = GameModes.None;
         private MainWindow mainWindow;
 
-        public string[] text;
-
         public Gamemode(MainWindow mainWindow, GameModes gamemode)
         {
             this.mainWindow = mainWindow;
-            SelectedGamemode = gamemode;
+            SelectedGamemode = gamemode;            
+        }
 
-            text = new string[] {
+        public string[] GetIntroText()
+        {
+            var text = new string[] {
                 $"This video shows {mainWindow.Players.Count} Beat Saber plays at once",
                 $"This video contains rapid flashes" };
 
@@ -59,6 +60,8 @@ namespace ReplayBattleRoyal.GameModes
                 default:
                     break;
             }
+
+            return text;
         }
 
         public void InitializeGamemode()

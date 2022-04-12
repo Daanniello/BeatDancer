@@ -147,6 +147,7 @@ namespace ReplayBattleRoyal.Entities
                     if (response.StatusCode == HttpStatusCode.OK)
                     {
                         var content = await response.Content.ReadAsStringAsync();
+                        if (content.Contains("Old replay format not supported.") || content.Contains("Replay not found. Try better ranked play.")) return null;
                         var f = (string)JsonConvert.DeserializeObject(content);
                         var jsonObject = JsonConvert.DeserializeObject<ReplayModel>(f);
                         return jsonObject;

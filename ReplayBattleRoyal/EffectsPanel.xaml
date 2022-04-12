@@ -20,5 +20,6 @@
         <Button x:Name="ActivateLightshowButton" Content="Toggle Lightshow" HorizontalAlignment="Center" Height="32" Margin="0,217,0,0" VerticalAlignment="Top" Width="407" Click="ActivateLightshowButton_Click"/>
         <Button x:Name="HighlightRandomPersonButton" Content="Highlight random person" HorizontalAlignment="Center" Height="32" Margin="0,266,0,0" VerticalAlignment="Top" Width="407" Click="HighlightRandomPersonButton_Click"/>
         <Button x:Name="TestButton" Content="Test Button" HorizontalAlignment="Center" Height="32" Margin="0,399,0,0" VerticalAlignment="Top" Width="407" Click="TestButton_Click"/>
+        <Button x:Name="ShowDebugButton" Content="ShowDebug" HorizontalAlignment="Center" Height="32" Margin="0,327,0,0" VerticalAlignment="Top" Width="407" Click="ShowDebugButton_Click"/>
     </Grid>
 </Window>

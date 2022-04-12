@@ -48,10 +48,10 @@ namespace ReplayBattleRoyal
             originalTrailSize = Players.First().TrailListLeft.Count;
             currentPlayerList = Players;
 
-            originalNoteColorLeft = mainWindow.NoteColorLeft;
-            originalNoteColorRight = mainWindow.NoteColorRight;
-            originalNoteColorLeftArrow = mainWindow.NoteColorLeftArrow;
-            originalNoteColorRightArrow = mainWindow.NoteColorRightArrow;
+            originalNoteColorLeft = mainWindow.playInstance.NoteColorLeft;
+            originalNoteColorRight = mainWindow.playInstance.NoteColorRight;
+            originalNoteColorLeftArrow = mainWindow.playInstance.NoteColorLeftArrow;
+            originalNoteColorRightArrow = mainWindow.playInstance.NoteColorRightArrow;
         }
 
         private void ClrPcker_Background_SelectedColorChanged(object sender, RoutedPropertyChangedEventArgs<Color?> e)
@@ -89,10 +89,10 @@ namespace ReplayBattleRoyal
                 if(item != null) item.Background = originalColors.FirstOrDefault(x => x.Key == player).Value;
             }
 
-            mainWindow.NoteColorLeft = originalNoteColorLeft;
-            mainWindow.NoteColorRight = originalNoteColorRight;
-            mainWindow.NoteColorLeftArrow = originalNoteColorLeftArrow;
-            mainWindow.NoteColorRightArrow = originalNoteColorRightArrow;
+            mainWindow.playInstance.NoteColorLeft = originalNoteColorLeft;
+            mainWindow.playInstance.NoteColorRight = originalNoteColorRight;
+            mainWindow.playInstance.NoteColorLeftArrow = originalNoteColorLeftArrow;
+            mainWindow.playInstance.NoteColorRightArrow = originalNoteColorRightArrow;
         }
 
         private void MakeEveryoneSmallerButton_Click(object sender, RoutedEventArgs e)
@@ -121,10 +121,10 @@ namespace ReplayBattleRoyal
 
         public void ChangeNoteColors(Brush left, Brush right, Brush leftArrow, Brush rightArrow)
         {
-            mainWindow.NoteColorLeft = left;
-            mainWindow.NoteColorRight = right;
-            mainWindow.NoteColorLeftArrow = leftArrow;
-            mainWindow.NoteColorRightArrow = rightArrow;
+            mainWindow.playInstance.NoteColorLeft = left;
+            mainWindow.playInstance.NoteColorRight = right;
+            mainWindow.playInstance.NoteColorLeftArrow = leftArrow;
+            mainWindow.playInstance.NoteColorRightArrow = rightArrow;
         }
 
         public void ChangeAllLeaderboardColor(Brush color)
@@ -291,6 +291,21 @@ namespace ReplayBattleRoyal
                 //}
             });
                                
+        }
+
+        private void ShowDebugButton_Click(object sender, RoutedEventArgs e)
+        {
+            mainWindow.SongTimeLabel.Visibility = Visibility.Visible;
+            mainWindow.SpeedLabel.Visibility = Visibility.Visible;
+            mainWindow.TimeLabel.Visibility = Visibility.Visible;
+            mainWindow.TimeLabelLead.Visibility = Visibility.Visible;
+
+            mainWindow.LeadLabelText.Visibility = Visibility.Visible;
+            mainWindow.SpeedLabelText.Visibility = Visibility.Visible;
+            mainWindow.SubsLabelText.Visibility = Visibility.Visible;
+            mainWindow.TimeLabelText.Visibility = Visibility.Visible;
+            mainWindow.SongNameLabel.Visibility = Visibility.Visible;
+            mainWindow.LeadNameLabelText.Visibility = Visibility.Visible;
         }
     }
 }

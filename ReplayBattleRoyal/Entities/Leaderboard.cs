@@ -22,7 +22,7 @@ namespace ReplayBattleRoyal.Entities
         public Player GetLastPlayer()
         {
             var item = listViewItems.OrderByDescending(x => x.Content.ToString().Split(" ")[0].Trim()).Last();
-            var player = mainWindow.Players.FirstOrDefault(x => item.Content.ToString().Contains(x.Name));
+            var player = mainWindow.Players.LastOrDefault(x => item.Content.ToString().Contains(x.Name));
             return player;
         }
 

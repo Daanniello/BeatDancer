@@ -51,7 +51,28 @@ namespace ReplayBattleRoyal.Entities
         {
             var orderedListview = listViewItems.OrderByDescending(x => x.Content.ToString().Split(" ")[0].Trim());
             mainWindow.ListViewPlayers.ItemsSource = orderedListview;
-            mainWindow.ListViewPlayers.Items.Refresh();
+            RefreshLeaderboard();
+        }
+
+        public void GivePointsToPlayer(Player player, double currentScore, double currentMaxScore)
+        {
+            mainWindow.Dispatcher.Invoke(() =>
+            {
+                var item = GetPlayer(player.Name);
+                if (item != null && player.ReplayModel.NoteTime.Count() != 0)
+                {
+                    float acc = (float)Math.Round((currentScore * 100) / currentMaxScore, 2);
+                    var combo = player.ReplayModel.Combos.First();
+                    var score = $"{acc}% {combo}";
+                    var spacesa = "";
+                    var spacesc = "";
+                    for (var i = 0; i < 5 % acc.ToString().Length; i++) spacesa += "  ";
+                    for (var i = 0; i < 9 % combo.ToString().Length; i++) spacesc += "  ";
+                    if (player.ReplayModel.Combos.Count() != 0) item.Content = $"{acc}{spacesa}%    {combo}{spacesc}    {player.Name}";
+
+                    OrderLeaderboardByAcc();                              
+                }
+            });
         }
     }
 }

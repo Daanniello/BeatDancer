@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ReplayBattleRoyal.GameModes;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -45,33 +46,60 @@ namespace ReplayBattleRoyal.Managers
             return grayScale;
         }
 
-        public static async Task ShowIntro(MainWindow mainWindow, string[] textList)
-        {          
+        public static async Task ShowIntro(MainWindow mainWindow, Gamemode gamemode, int playerAmount, string mapName, string mapAuthor, string mapMapper, Uri coverPath)
+        {
             mainWindow.TransitionScreen.Visibility = Visibility.Visible;
-
             await Task.Delay(1000);
 
-            foreach (var text in textList)
+            //Show Info text
+            mainWindow.InfoText.Text = $"This video shows {playerAmount} Beat Saber players playing the following map at once";
+            mainWindow.MapNameText.Text = mapName;
+            mainWindow.MapAuthorText.Text = mapAuthor;
+            mainWindow.MapMapperText.Text = mapMapper;
+            mainWindow.mapCover.Source = new BitmapImage(coverPath);
+            mainWindow.InfoText.Visibility = Visibility.Visible;
+            mainWindow.MapNameText.Visibility = Visibility.Visible;
+            mainWindow.MapAuthorText.Visibility = Visibility.Visible;
+            mainWindow.MapMapperText.Visibility = Visibility.Visible;
+            mainWindow.mapCover.Visibility = Visibility.Visible;
+            mainWindow.InfoBackground.Visibility = Visibility.Visible;
+            await Task.Delay(6000);
+            mainWindow.InfoText.Visibility = Visibility.Hidden;
+            mainWindow.MapNameText.Visibility = Visibility.Hidden;
+            mainWindow.MapAuthorText.Visibility = Visibility.Hidden;
+            mainWindow.MapMapperText.Visibility = Visibility.Hidden;
+            mainWindow.mapCover.Visibility = Visibility.Hidden;
+            mainWindow.InfoBackground.Visibility = Visibility.Hidden;
+
+            //Show Gamemode
+            if (gamemode.SelectedGamemode == Gamemode.GameModes.None) { }
+            else
             {
-                mainWindow.TransitionLabel.Text = text;
-                if(text == textList[textList.Length - 1])
-                {
-                    mainWindow.warningLeft.Visibility = Visibility.Visible;
-                    mainWindow.warningRight.Visibility = Visibility.Visible;
-                }
+                mainWindow.GameModeText.Text = gamemode.SelectedGamemode.ToString();
+                mainWindow.TransitionLabel.Text = gamemode.GetIntroText();
+                mainWindow.GameModeText.Visibility = Visibility.Visible;
+                mainWindow.TransitionLabel.Visibility = Visibility.Visible;
                 await Task.Delay(4000);
+                mainWindow.GameModeText.Visibility = Visibility.Hidden;
+                mainWindow.TransitionLabel.Visibility = Visibility.Hidden;
             }
+
+            //Show Warning
+            mainWindow.WarningText.Visibility = Visibility.Visible;
+            mainWindow.warningLeft.Visibility = Visibility.Visible;
+            mainWindow.warningRight.Visibility = Visibility.Visible;
+            await Task.Delay(4000);
 
             for (var i = 0; i < 100; i++)
             {
                 await Task.Delay(10);
                 mainWindow.TransitionScreen.Opacity -= 0.01;
-                mainWindow.TransitionLabel.Opacity -= 0.01;
-                mainWindow.warningLeft.Opacity -= 0.01;
-                mainWindow.warningRight.Opacity -= 0.01;
             }
 
             mainWindow.TransitionScreen.Visibility = Visibility.Hidden;
+            mainWindow.WarningText.Visibility = Visibility.Hidden;
+            mainWindow.warningLeft.Visibility = Visibility.Hidden;
+            mainWindow.warningRight.Visibility = Visibility.Hidden;
         }
 
         public static async Task ShowOutro(MainWindow mainWindow, string[] textList = null)
@@ -86,7 +114,7 @@ namespace ReplayBattleRoyal.Managers
                 mainWindow.TransitionLabel.Opacity += 0.01;
             }
 
-           if(textList != null)
+            if (textList != null)
             {
                 foreach (var text in textList)
                 {

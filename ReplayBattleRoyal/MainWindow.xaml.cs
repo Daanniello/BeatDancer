@@ -49,7 +49,7 @@ namespace ReplayBattleRoyal
 
             ScoresaberClient = new ScoreSaberClient();
 
-            Start(399855, 8, country: null, streamMode: false, Gamemode.GameModes.None, useBackgroundVideo: true, backgrounVideoDelay: -2175);
+            Start(399855, 12, country: null, streamMode: true, Gamemode.GameModes.None, useBackgroundVideo: true, backgrounVideoDelay: -2100);
         }
 
         public async Task Start(int songID, int playerAmount = 1, string country = null, bool streamMode = false, Gamemode.GameModes selectedGameMode = Gamemode.GameModes.None, bool useBackgroundVideo = false, int backgrounVideoDelay = 0)
@@ -151,7 +151,7 @@ namespace ReplayBattleRoyal
             effectsPanel.Show();
 
             //Show intro
-            if (streamMode) await MediaManager.ShowIntro(this, gameMode.GetIntroText());
+            if (streamMode) await MediaManager.ShowIntro(this, gameMode, playerCount, leaderboardInfo.SongName, leaderboardInfo.SongAuthorName, leaderboardInfo.LevelAuthorName, leaderboardInfo.CoverImage);
             LoadingLabel.Visibility = Visibility.Hidden;
             StartPlay();
         }

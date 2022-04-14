@@ -16,46 +16,27 @@ namespace ReplayBattleRoyal.GameModes
         public Gamemode(MainWindow mainWindow, GameModes gamemode)
         {
             this.mainWindow = mainWindow;
-            SelectedGamemode = gamemode;            
+            SelectedGamemode = gamemode;
         }
 
-        public string[] GetIntroText()
+        public string GetIntroText()
         {
-            var text = new string[] {
-                $"This video shows {mainWindow.Players.Count} Beat Saber plays at once",
-                $"This video contains rapid flashes" };
+            var text = "";
 
             switch (SelectedGamemode)
             {
-                case GameModes.None:
-                    break;
                 case GameModes.BattleRoyale:
-                    text = new string[] {
-                $"This video shows {mainWindow.Players.Count} Beat Saber plays at once",
-                $"Battle Royale: Every couple seconds a player is eliminated",
-                $"This video contains rapid flashes"
-            };
-                    break;
+                    text = $"Every couple seconds a player is eliminated";
+                break;
                 case GameModes.ComboDrop:
-                    text = new string[] {
-                $"This video shows {mainWindow.Players.Count} Beat Saber plays at once",
-                $"Combo Drop: Whenever a player loses combo, the player will get eliminated",
-                $"This video contains rapid flashes"
-            };
+                    text = $"Whenever a player loses combo, the player will get eliminated";
+               
                     break;
                 case GameModes.ComboDropSafe:
-                    text = new string[] {
-                $"This video shows {mainWindow.Players.Count} Beat Saber plays at once",
-                $"Combo Drop: Whenever a player loses combo, the player will get eliminated",
-                $"This video contains rapid flashes"
-            };
+                    text = $"Whenever a player loses combo, the player will get eliminated";
                     break;
                 case GameModes.PerfectAcc:
-                    text = new string[] {
-                $"This video shows {mainWindow.Players.Count} Beat Saber plays at once",
-                $"Perfect Acc: Whenever a player hits lower as {mainWindow.perfectAccAmount}, the player gets eliminated",
-                $"This video contains rapid flashes"
-            };
+                    text = $"Whenever a player hits lower as {mainWindow.perfectAccAmount}, the player gets eliminated";             
                     break;
                 default:
                     break;

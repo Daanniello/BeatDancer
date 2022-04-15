@@ -1,7 +1,7 @@
-﻿using System;
+﻿using ScoreSaberLib;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -12,11 +12,20 @@ namespace ReplayBattleRoyal.Entities
     {
         public List<ListViewItem> listViewItems = new List<ListViewItem>();
         private MainWindow mainWindow;
+        public ScoreSaberClient scoresaberClient;
+        public ScoreSaberLib.Models.LeaderboardInfoModel.Leaderboard leaderboardInfo;
 
         public Leaderboard(MainWindow mainWindow)
         {
             this.mainWindow = mainWindow;
             mainWindow.ListViewPlayers.ItemsSource = listViewItems;
+            scoresaberClient = new ScoreSaberClient();
+        }
+
+        public async Task<ScoreSaberLib.Models.LeaderboardInfoModel.Leaderboard> GetLeaderboardInfo(int songID)
+        {
+            leaderboardInfo = await scoresaberClient.Api.Leaderboards.GetLeaderboardInfoByID(songID);
+            return leaderboardInfo;
         }
 
         public Player GetLastPlayer()

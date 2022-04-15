@@ -69,7 +69,7 @@ namespace ReplayBattleRoyal.GameModes
 
                 await Task.Delay(TimeSpan.FromSeconds(timeToWait));
 
-                mainWindow.EliminateLastPlayer();
+                mainWindow.playInstance.EliminateLastPlayer();
 
                 playerAmount--;
             } while (playerAmount > 1);

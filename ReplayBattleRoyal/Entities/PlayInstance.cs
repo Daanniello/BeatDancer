@@ -1,6 +1,7 @@
 ﻿using FFMpegCore;
 using FFMpegCore.Enums;
 using Newtonsoft.Json;
+using ReplayBattleRoyal.GameModes;
 using ReplayBattleRoyal.Managers;
 using ReplayBattleRoyal.Models;
 using System;
@@ -10,9 +11,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -50,6 +49,53 @@ namespace ReplayBattleRoyal.Entities
             NoteColorLeftArrow = System.Windows.Media.Brushes.White;
             NoteColorRightArrow = System.Windows.Media.Brushes.White;
         }
+
+        public void EliminateLastPlayer()
+        {
+            mainWindow.Dispatcher.Invoke(() =>
+            {
+                RemovePlayer(mainWindow.leaderboard.GetLastPlayer());
+            });
+        }
+
+        public void RemovePlayer(Player player)
+        {
+            mainWindow.Dispatcher.Invoke(() =>
+            {
+                var playerToRemove = mainWindow.leaderboard.GetPlayer(player.Name);
+                if (playerToRemove == null) return;
+
+                //Perfect acc Mode
+                if (mainWindow.gameMode.SelectedGamemode == Gamemode.GameModes.PerfectAcc || mainWindow.gameMode.SelectedGamemode == Gamemode.GameModes.ComboDropSafe)
+                {
+                    var opacity = 0.2;
+                    playerToRemove.Opacity = opacity;
+                    player.LeftHand.Opacity = opacity;
+                    player.RightHand.Opacity = opacity;
+                    player.LeftHandTip.Opacity = opacity;
+                    player.RightHandTip.Opacity = opacity;
+                    player.Head.Opacity = opacity;
+                    foreach (var trail in player.TrailListLeft) trail.Opacity = opacity;
+                    foreach (var trail in player.TrailListRight) trail.Opacity = opacity;
+
+                    mainWindow.leaderboard.RefreshLeaderboard();
+                    return;
+                }
+
+                mainWindow.leaderboard.RemovePlayer(playerToRemove);
+                if (!player.hasLead) mainWindow.Players.Remove(player);
+                mainWindow.CanvasSpace.Children.Remove(player.LeftHand);
+                mainWindow.CanvasSpace.Children.Remove(player.RightHand);
+                mainWindow.CanvasSpace.Children.Remove(player.LeftHandTip);
+                mainWindow.CanvasSpace.Children.Remove(player.RightHandTip);
+                mainWindow.CanvasSpace.Children.Remove(player.Head);
+                foreach (var trail in player.TrailListLeft) mainWindow.CanvasSpace.Children.Remove(trail);
+                foreach (var trail in player.TrailListRight) mainWindow.CanvasSpace.Children.Remove(trail);
+
+                mainWindow.leaderboard.RefreshLeaderboard();
+            });
+        }
+
         public async void AddNote(string noteInfo, double delay = 0)
         {
             var xNotePlacement = Convert.ToInt32(noteInfo.Substring(0, 1));
@@ -184,10 +230,10 @@ namespace ReplayBattleRoyal.Entities
 
                 foreach (ZipArchiveEntry entry in archive.Entries)
                 {
-                    if (entry.FullName.Replace("Standard", "").Contains($"{mainWindow.leaderboardInfo.Difficulty.DifficultyRaw.Replace("_", "").Replace("Solo", "").Replace("Standard", "")}.dat"))
+                    if (entry.FullName.Replace("Standard", "").Contains($"{mainWindow.leaderboard.leaderboardInfo.Difficulty.DifficultyRaw.Replace("_", "").Replace("Solo", "").Replace("Standard", "")}.dat"))
                     {
-                        if (File.Exists(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{mainWindow.leaderboardInfo.Difficulty.DifficultyRaw.Replace("_", "").Replace("Solo", "").Replace("Standard", "")}.dat")) File.Delete(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{mainWindow.leaderboardInfo.Difficulty.DifficultyRaw.Replace("_", "").Replace("Solo", "").Replace("Standard", "")}.dat");
-                        entry.ExtractToFile(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{mainWindow.leaderboardInfo.Difficulty.DifficultyRaw.Replace("_", "").Replace("Solo", "").Replace("Standard", "")}.dat");
+                        if (File.Exists(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{mainWindow.leaderboard.leaderboardInfo.Difficulty.DifficultyRaw.Replace("_", "").Replace("Solo", "").Replace("Standard", "")}.dat")) File.Delete(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{mainWindow.leaderboard.leaderboardInfo.Difficulty.DifficultyRaw.Replace("_", "").Replace("Solo", "").Replace("Standard", "")}.dat");
+                        entry.ExtractToFile(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{mainWindow.leaderboard.leaderboardInfo.Difficulty.DifficultyRaw.Replace("_", "").Replace("Solo", "").Replace("Standard", "")}.dat");
                     }
                     if (entry.FullName.ToLower().Contains($"info.dat"))
                     {
@@ -348,7 +394,7 @@ namespace ReplayBattleRoyal.Entities
 
         public MapDetailsModel GetMapDetailsModel()
         {
-            var json = File.ReadAllText(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{ mainWindow.leaderboardInfo.Difficulty.DifficultyRaw.Replace("_", "").Replace("Solo", "").Replace("Standard", "")}.dat");
+            var json = File.ReadAllText(AppContext.BaseDirectory + $@"Audio/ZipTemp/Extract/{ mainWindow.leaderboard.leaderboardInfo.Difficulty.DifficultyRaw.Replace("_", "").Replace("Solo", "").Replace("Standard", "")}.dat");
             var mapDetails = JsonConvert.DeserializeObject<MapDetailsModel>(json);
             return mapDetails;
         }

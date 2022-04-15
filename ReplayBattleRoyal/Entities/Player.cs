@@ -1,17 +1,14 @@
 ﻿using Newtonsoft.Json;
 using ReplayBattleRoyal.GameModes;
-using ScoreSaberLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using System.Windows.Threading;
 
 namespace ReplayBattleRoyal.Entities
 {
@@ -44,7 +41,7 @@ namespace ReplayBattleRoyal.Entities
         {
             try
             {
-                var playerInfo = await mainWindow.ScoresaberClient.Api.Players.GetPlayer(Convert.ToInt64(ID));
+                var playerInfo = await mainWindow.leaderboard.scoresaberClient.Api.Players.GetPlayer(Convert.ToInt64(ID));
                 var replayModel = await GetReplayModel($"https://sspreviewdecode.azurewebsites.net/?playerID={ID}&songID={mainWindow.songID}");
 
                 if (replayModel == null || playerInfo == null) return false;
@@ -286,7 +283,7 @@ namespace ReplayBattleRoyal.Entities
                 //Remove player if Perfect mode is on and player hits a low hit.
                 if (mainWindow.gameMode.SelectedGamemode == Gamemode.GameModes.PerfectAcc)
                 {
-                    if (storedScores.First() < mainWindow.perfectAccAmount) mainWindow.RemovePlayer(this);
+                    if (storedScores.First() < mainWindow.perfectAccAmount) mainWindow.playInstance.RemovePlayer(this);
                 }
 
                 currentScore += comboMultiplier * storedScores.First();

@@ -1,14 +1,12 @@
 ﻿using ReplayBattleRoyal.Entities;
 using ReplayBattleRoyal.GameModes;
 using ReplayBattleRoyal.Managers;
-using ScoreSaberLib;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using static ScoreSaberLib.Models.LeaderboardScoresModel;
 using Leaderboard = ReplayBattleRoyal.Entities.Leaderboard;
 
@@ -19,45 +17,56 @@ namespace ReplayBattleRoyal
     /// </summary>
     public partial class MainWindow : Window
     {
+        //Canvas
+        public double canvasWidth;
+        public double canvasHeight;
+
+        //Map
         public int songID;
-        public string hashCode;
+
+        //Players
         public List<Player> Players = new List<Player>();
-        public double songTime = 0;
-        public ScoreSaberClient ScoresaberClient;
-        public Entities.Leaderboard leaderboard;
-        public ScoreSaberLib.Models.LeaderboardInfoModel.Leaderboard leaderboardInfo;
-        private Random random = new Random();
-        private EffectsPanel effectsPanel;
-        private int backgroundVideoDelay;
+
+        //Instance
         public PlayInstance playInstance;
+        public double songTime = 0;
+        public bool streamMode = false;
+        private double _speedFactor = 10;
+
+        public Entities.Leaderboard leaderboard;
+        private int backgroundVideoDelay;
 
         private int playerStartAmount;
 
-        private double _speedFactor = 10;
         private double _startSpeedFactor;
 
-        public bool streamMode = false;
         public Gamemode gameMode;
 
         //Effects
+        private EffectsPanel effectsPanel;
         public bool lightshowIsActivated = false;
         public int perfectAccAmount = 100;
+
+        //General
+        private Random random = new Random();
 
         public MainWindow()
         {
             InitializeComponent();
-
-            ScoresaberClient = new ScoreSaberClient();
-
-            Start(399855, 12, country: null, streamMode: true, Gamemode.GameModes.None, useBackgroundVideo: true, backgrounVideoDelay: -2100);
+            Start(399855, 8, country: null, streamMode: true, Gamemode.GameModes.BattleRoyale, useBackgroundVideo: true, backgrounVideoDelay: -2100);
         }
 
         public async Task Start(int songID, int playerAmount = 1, string country = null, bool streamMode = false, Gamemode.GameModes selectedGameMode = Gamemode.GameModes.None, bool useBackgroundVideo = false, int backgrounVideoDelay = 0)
         {
             this.streamMode = streamMode;
+            this.backgroundVideoDelay = backgrounVideoDelay;
+            this.songID = songID;
             gameMode = new Gamemode(this, selectedGameMode);
             leaderboard = new Leaderboard(this);
+            await leaderboard.GetLeaderboardInfo(songID);
             playInstance = new PlayInstance(this);
+            canvasWidth = CanvasSpace.Width;
+            canvasHeight = CanvasSpace.Height;
             _startSpeedFactor = _speedFactor;
 
             if (streamMode)
@@ -79,36 +88,30 @@ namespace ReplayBattleRoyal
                 TransitionStartScreen.Visibility = Visibility.Hidden;
             }
 
+            //Initialize gamemode 
             gameMode.InitializeGamemode();
 
-
-
-            this.backgroundVideoDelay = backgrounVideoDelay;
-            this.songID = songID;
+            //Gettings SongInfo
             LoadingLabel.Content = $"Loading... Getting song info";
-            leaderboardInfo = await ScoresaberClient.Api.Leaderboards.GetLeaderboardInfoByID(songID);
-
-            this.hashCode = leaderboardInfo.SongHash.ToLower();
-            var leaderboardScores = new List<Score>();
-
-            //Load leaderboard players 
-            for (var i = 0; i <= Math.Round(playerAmount / 10.0); i++) leaderboardScores.AddRange(await ScoresaberClient.Api.Leaderboards.GetLeaderboardScoresByID(songID, country, page: i + 1));
-
+            var leaderboardInfo = leaderboard.leaderboardInfo;
             SongNameLabel.Content = leaderboardInfo.SongName;
 
+            //Load leaderboard players 
+            var leaderboardScores = new List<Score>();
+            for (var i = 0; i <= Math.Round(playerAmount / 10.0); i++) leaderboardScores.AddRange(await leaderboard.scoresaberClient.Api.Leaderboards.GetLeaderboardScoresByID(songID, country, page: i + 1));
+
+            //Resize leaderboard view
             var gridView = ListViewPlayers.View as GridView;
             gridView.Columns.First().Width = 550;
 
+            //Prepare song file
             LoadingLabel.Content = $"Loading... preparing song file";
-            await playInstance.PrepareSongFile(hashCode, useBackgroundVideo);
+            await playInstance.PrepareSongFile(leaderboardInfo.SongHash.ToLower(), useBackgroundVideo);
 
-            //Load in all players 
+            //Load in all players. Parallel loading
             LoadingLabel.Content = $"Loading... start loading players";
-
             var playerCount = playerAmount;
             var playersLoaded = 0;
-
-            //Parallel loading
             var secureLead = 3;
             var tasks = new List<Task>();
             for (var i = 0; i < playerAmount; i++)
@@ -134,7 +137,6 @@ namespace ReplayBattleRoyal
             }
             await Task.WhenAll(tasks);
 
-
             //Count down if stream mode is activated
             if (streamMode)
             {
@@ -158,11 +160,7 @@ namespace ReplayBattleRoyal
 
         public async void StartPlay()
         {
-            var width = CanvasSpace.Width;
-            var height = CanvasSpace.Height;
-
-            var playerList = new List<Player>();
-            //Gives the correct person lead
+            //Gives the correct person the lead
             foreach (var player in Players)
             {
                 var corrupt = false;
@@ -202,10 +200,10 @@ namespace ReplayBattleRoyal
                 else player.hasLead = false;
             }
 
+            //Gets the lead player 
             var leadPlayer = Players.FirstOrDefault(x => x.hasLead);
             if (leadPlayer != null) LeadNameLabelText.Content = leadPlayer.Name;
             else LeadNameLabelText.Content = "NO LEAD";
-
 
             //Start all players in tasks
             var tasks = new List<Task>();
@@ -213,13 +211,14 @@ namespace ReplayBattleRoyal
             {
                 var task = new Task(() =>
                 {
-                    Play(player, width, height);
+                    Play(player);
                 });
                 tasks.Add(task);
             }
 
             //Player start amount 
             playerStartAmount = Players.Count();
+
             //Start playing background video if its been set
             if (BackgroundVideo.Source != null)
             {
@@ -230,6 +229,7 @@ namespace ReplayBattleRoyal
 
             //Start all players
             tasks.ForEach(task => { task.Start(); });
+
             //Play Song
             playInstance.PlaySong();
 
@@ -241,58 +241,14 @@ namespace ReplayBattleRoyal
             Task.WaitAll(tasks.ToArray());
         }
 
-        public void EliminateLastPlayer()
-        {
-            Dispatcher.Invoke(() =>
-            {
-                RemovePlayer(leaderboard.GetLastPlayer());
-            });
-        }
 
-        public void RemovePlayer(Player player)
-        {
-            Dispatcher.Invoke(() =>
-            {
-                var playerToRemove = leaderboard.GetPlayer(player.Name);
-                if (playerToRemove == null) return;
 
-                //Perfect acc Mode
-                if (gameMode.SelectedGamemode == Gamemode.GameModes.PerfectAcc || gameMode.SelectedGamemode == Gamemode.GameModes.ComboDropSafe)
-                {
-                    var opacity = 0.2;
-                    playerToRemove.Opacity = opacity;
-                    player.LeftHand.Opacity = opacity;
-                    player.RightHand.Opacity = opacity;
-                    player.LeftHandTip.Opacity = opacity;
-                    player.RightHandTip.Opacity = opacity;
-                    player.Head.Opacity = opacity;
-                    foreach (var trail in player.TrailListLeft) trail.Opacity = opacity;
-                    foreach (var trail in player.TrailListRight) trail.Opacity = opacity;
-
-                    ListViewPlayers.Items.Refresh();
-                    return;
-                }
-
-                leaderboard.RemovePlayer(playerToRemove);
-                if (!player.hasLead) Players.Remove(player);
-                CanvasSpace.Children.Remove(player.LeftHand);
-                CanvasSpace.Children.Remove(player.RightHand);
-                CanvasSpace.Children.Remove(player.LeftHandTip);
-                CanvasSpace.Children.Remove(player.RightHandTip);
-                CanvasSpace.Children.Remove(player.Head);
-                foreach (var trail in player.TrailListLeft) CanvasSpace.Children.Remove(trail);
-                foreach (var trail in player.TrailListRight) CanvasSpace.Children.Remove(trail);
-
-                ListViewPlayers.Items.Refresh();
-            });
-        }
-
-        public async void Play(Player player, double width, double height)
+        public async void Play(Player player)
         {
             var hasLead = player.hasLead;
-            var zoomx = width / 2.4;
-            var zoomy = height / 4.8;
-            var offsetHeight = 0 - (height / 4.35);
+            var zoomx = canvasWidth / 2.4;
+            var zoomy = canvasHeight / 4.8;
+            var offsetHeight = 0 - (canvasHeight / 4.35);
 
             //Remove start loading frames 
             player.ReplayModel.Frames.RemoveAll(x => x.A == 0);
@@ -417,7 +373,7 @@ namespace ReplayBattleRoyal
                             {
                                 if (leaderboard.listViewItems.Count > 1)
                                 {
-                                    Dispatcher.Invoke(() => RemovePlayer(player));
+                                    Dispatcher.Invoke(() => playInstance.RemovePlayer(player));
                                     continue;
                                 }
                             }
@@ -488,7 +444,7 @@ namespace ReplayBattleRoyal
                 }
 
                 //Draw Player
-                player.DrawPlayer(player, frame, width, height, zoomx, zoomy, offsetHeight);
+                player.DrawPlayer(player, frame, canvasWidth, canvasHeight, zoomx, zoomy, offsetHeight);
 
                 count++;
             }

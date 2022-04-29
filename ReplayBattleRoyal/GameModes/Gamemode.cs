@@ -35,6 +35,9 @@ namespace ReplayBattleRoyal.GameModes
                 case GameModes.ComboDropSafe:
                     text = $"Whenever a player loses combo, the player will get eliminated";
                     break;
+                case GameModes.SkillIssue:
+                    text = $"High ranked players on the map will be compared against Lower ranked players on the map";
+                    break;
                 case GameModes.PerfectAcc:
                     text = $"Whenever a player hits lower as {mainWindow.perfectAccAmount}, the player gets eliminated";             
                     break;
@@ -94,7 +97,8 @@ namespace ReplayBattleRoyal.GameModes
             BattleRoyale,
             ComboDrop,
             ComboDropSafe,
-            PerfectAcc
+            PerfectAcc,
+            SkillIssue
         }
     }
 }

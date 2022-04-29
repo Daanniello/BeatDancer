@@ -42,7 +42,7 @@ namespace ReplayBattleRoyal.Entities
 
         public ListViewItem GetPlayer(string name)
         {
-            return listViewItems.FirstOrDefault(x => x.Content.ToString().Contains(name));
+            return listViewItems.FirstOrDefault(x => (x.Content.ToString() + " ").Contains(" " + name + " "));
         }
 
         public void AddPlayer(string Name, Brush color)

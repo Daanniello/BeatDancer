@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using static ScoreSaberLib.Models.LeaderboardScoresModel;
 using Leaderboard = ReplayBattleRoyal.Entities.Leaderboard;
 
@@ -31,7 +32,7 @@ namespace ReplayBattleRoyal
         public PlayInstance playInstance;
         public double songTime = 0;
         public bool streamMode = false;
-        private double _speedFactor = 10;
+        private double _speedFactor = 10.8;
 
         public Entities.Leaderboard leaderboard;
         private int backgroundVideoDelay;
@@ -45,7 +46,7 @@ namespace ReplayBattleRoyal
         //Effects
         private EffectsPanel effectsPanel;
         public bool lightshowIsActivated = false;
-        public int perfectAccAmount = 100;
+        public int perfectAccAmount = 105;
 
         //General
         private Random random = new Random();
@@ -53,7 +54,7 @@ namespace ReplayBattleRoyal
         public MainWindow()
         {
             InitializeComponent();
-            Start(399855, 8, country: null, streamMode: true, Gamemode.GameModes.BattleRoyale, useBackgroundVideo: true, backgrounVideoDelay: -2100);
+            Start(408452, 5, country: null, streamMode: false, Gamemode.GameModes.None, useBackgroundVideo: true, backgrounVideoDelay: -1850);
         }
 
         public async Task Start(int songID, int playerAmount = 1, string country = null, bool streamMode = false, Gamemode.GameModes selectedGameMode = Gamemode.GameModes.None, bool useBackgroundVideo = false, int backgrounVideoDelay = 0)
@@ -88,6 +89,10 @@ namespace ReplayBattleRoyal
                 TransitionStartScreen.Visibility = Visibility.Hidden;
             }
 
+            //Show effects panel 
+            effectsPanel = new EffectsPanel(this);
+            effectsPanel.Show();
+
             //Initialize gamemode 
             gameMode.InitializeGamemode();
 
@@ -98,7 +103,16 @@ namespace ReplayBattleRoyal
 
             //Load leaderboard players 
             var leaderboardScores = new List<Score>();
-            for (var i = 0; i <= Math.Round(playerAmount / 10.0); i++) leaderboardScores.AddRange(await leaderboard.scoresaberClient.Api.Leaderboards.GetLeaderboardScoresByID(songID, country, page: i + 1));
+            if (selectedGameMode == Gamemode.GameModes.SkillIssue)
+            {
+                var playerAmountHalved = playerAmount / 2;
+                for (var i = 0; i < Math.Round(playerAmountHalved / 5.0); i++) leaderboardScores.AddRange(await leaderboard.scoresaberClient.Api.Leaderboards.GetLeaderboardScoresByID(songID, country, page: i + 1));
+                for (var i = 0; i < Math.Round(playerAmountHalved / 5.0); i++) leaderboardScores.AddRange(await leaderboard.scoresaberClient.Api.Leaderboards.GetLeaderboardScoresByID(songID, country, page: i + 1 + 26));
+            }
+            else
+            {
+                for (var i = 0; i <= Math.Round(playerAmount / 10.0); i++) leaderboardScores.AddRange(await leaderboard.scoresaberClient.Api.Leaderboards.GetLeaderboardScoresByID(songID, country, page: i + 1));
+            }
 
             //Resize leaderboard view
             var gridView = ListViewPlayers.View as GridView;
@@ -112,27 +126,24 @@ namespace ReplayBattleRoyal
             LoadingLabel.Content = $"Loading... start loading players";
             var playerCount = playerAmount;
             var playersLoaded = 0;
-            var secureLead = 3;
             var tasks = new List<Task>();
+            //Mix up leaderboard for fair loading
+            if (selectedGameMode == Gamemode.GameModes.SkillIssue) leaderboardScores = leaderboardScores.OrderByDescending(x => random.Next(0, playerCount)).ToList();
             for (var i = 0; i < playerAmount; i++)
             {
                 var color = ColorManager.ColorFromHSV(random.Next(150, 400), random.Next(90, 100) / 100.00, 1);
+                //If game mode skillissue. group them in colors
+                if (selectedGameMode == Gamemode.GameModes.SkillIssue) color = leaderboardScores[i].Rank < 300 ? Colors.Red : Colors.LightGray;
 
-                if (i < secureLead)
+                tasks.Add(Task.Run(async () =>
                 {
-                    if (!await LoadInPlayer($"{leaderboardScores[i].LeaderboardPlayerInfo.Id}", color)) secureLead++;
-                }
-                else
-                {
-                    tasks.Add(Task.Run(async () =>
-                    {
-                        var isFinishedCorrectly = await LoadInPlayer($"{leaderboardScores[i].LeaderboardPlayerInfo.Id}", color);
-                        if (isFinishedCorrectly) playersLoaded++;
-                        else playerCount--;
+                    var isFinishedCorrectly = await LoadInPlayer($"{leaderboardScores[i].LeaderboardPlayerInfo.Id}", color);
+                    if (isFinishedCorrectly) playersLoaded++;
+                    else playerCount--;
 
-                        Dispatcher.Invoke(() => { LoadingLabel.Content = $"Loading {playersLoaded}/{playerCount}..."; });
-                    }));
-                }
+                    Dispatcher.Invoke(() => { LoadingLabel.Content = $"Loading {playersLoaded}/{playerCount}..."; });
+                }));
+
                 await Task.Delay(4000);
             }
             await Task.WhenAll(tasks);
@@ -148,9 +159,8 @@ namespace ReplayBattleRoyal
                 TransitionStartScreen.Visibility = Visibility.Visible;
             }
 
-            //Open effects panel
-            effectsPanel = new EffectsPanel(this, Players);
-            effectsPanel.Show();
+            //Init effects panel
+            effectsPanel.InitializeEffectPanel(Players);
 
             //Show intro
             if (streamMode) await MediaManager.ShowIntro(this, gameMode, playerCount, leaderboardInfo.SongName, leaderboardInfo.SongAuthorName, leaderboardInfo.LevelAuthorName, leaderboardInfo.CoverImage);
@@ -409,12 +419,13 @@ namespace ReplayBattleRoyal
                 //Force the lead to get as fast as the song that is playing
                 if (hasLead)
                 {
+                    var errorCorrectionLimit = 5;
                     if (frame.A < songTime - 0.01) _speedFactor += (songTime - frame.A) * 0.1;
                     else if (frame.A > songTime + 0.01) _speedFactor -= (frame.A - songTime) * 0.1;
                     else _speedFactor = (lowestSpeedFactor + highestSpeedFactor) / 2;
 
-                    if (_speedFactor > startSpeedFactor + 1) _speedFactor = startSpeedFactor + 1;
-                    if (_speedFactor < startSpeedFactor - 1) _speedFactor = startSpeedFactor - 1;
+                    if (_speedFactor > startSpeedFactor + errorCorrectionLimit) _speedFactor = startSpeedFactor + errorCorrectionLimit;
+                    if (_speedFactor < startSpeedFactor - errorCorrectionLimit) _speedFactor = startSpeedFactor - errorCorrectionLimit;
 
                     if (_speedFactor < lowestSpeedFactor) lowestSpeedFactor = _speedFactor;
                     if (_speedFactor > highestSpeedFactor) highestSpeedFactor = _speedFactor;
@@ -439,12 +450,13 @@ namespace ReplayBattleRoyal
                     {
                         var lastNoteTimePassed = storedNoteTimes.Where(x => x < frame.A).Last();
                         var index = storedNoteTimes.IndexOf(lastNoteTimePassed);
-                        leaderboard.GivePointsToPlayer(player, player.currentScore, player.currentMaxScore);                       
+                        leaderboard.GivePointsToPlayer(player, player.currentScore, player.currentMaxScore);
                     }
                 }
 
                 //Draw Player
                 player.DrawPlayer(player, frame, canvasWidth, canvasHeight, zoomx, zoomy, offsetHeight);
+
 
                 count++;
             }

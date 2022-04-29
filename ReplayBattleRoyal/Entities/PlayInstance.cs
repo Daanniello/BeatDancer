@@ -62,6 +62,7 @@ namespace ReplayBattleRoyal.Entities
         {
             mainWindow.Dispatcher.Invoke(() =>
             {
+                if (player == null) return;
                 var playerToRemove = mainWindow.leaderboard.GetPlayer(player.Name);
                 if (playerToRemove == null) return;
 
@@ -105,7 +106,7 @@ namespace ReplayBattleRoyal.Entities
 
             mainWindow.Dispatcher.Invoke(async () =>
             {
-                var noteRectangle = new System.Windows.Shapes.Rectangle() { Stroke = System.Windows.Media.Brushes.White, Width = 110, Height = 110, Fill = noteType == 0 ? NoteColorLeft : NoteColorRight, Opacity = 1, RadiusX = 10, RadiusY = 10 };
+                var noteRectangle = new System.Windows.Shapes.Rectangle() { Stroke = System.Windows.Media.Brushes.White, Width = 140, Height = 140, Fill = noteType == 0 ? NoteColorLeft : NoteColorRight, Opacity = 1, RadiusX = 10, RadiusY = 10 };
                 var noteDot = new Ellipse() { Fill = System.Windows.Media.Brushes.White, Width = 50, Height = 50 };
                 var converter = TypeDescriptor.GetConverter(typeof(Geometry));
                 string pathData = "M50,50 L150,90 L250,50 L250,30 L50,30 Z";
@@ -114,7 +115,7 @@ namespace ReplayBattleRoyal.Entities
                 mainWindow.CanvasSpace.Children.Add(noteRectangle);
 
                 var actualXNotePosition = mainWindow.CanvasSpace.Width / 4 * xNotePlacement + 110;
-                var actualYNotePosition = mainWindow.CanvasSpace.Height / 2.5 * yNotePlacement + 100;
+                var actualYNotePosition = mainWindow.CanvasSpace.Height / 3 * yNotePlacement + 100;
                 var posxdir = actualXNotePosition + 15;
                 var posydir = actualYNotePosition + 65;
 
@@ -125,8 +126,8 @@ namespace ReplayBattleRoyal.Entities
                 if (noteDirection == 8)
                 {
                     mainWindow.CanvasSpace.Children.Add(noteDot);
-                    Canvas.SetLeft(noteDot, actualXNotePosition + 30);
-                    Canvas.SetBottom(noteDot, actualYNotePosition + 30);
+                    Canvas.SetLeft(noteDot, actualXNotePosition + 40);
+                    Canvas.SetBottom(noteDot, actualYNotePosition + 40);
                 }
                 else
                 {
@@ -134,8 +135,8 @@ namespace ReplayBattleRoyal.Entities
                     Canvas.SetLeft(noteArrow, posxdir);
                     Canvas.SetBottom(noteArrow, posydir);
                 }
-
-                if (noteDirection == 0) noteArrow.RenderTransform = new RotateTransform(180, 48, 35);//up
+                                                                                        //x up = right // y up = down
+                if (noteDirection == 0) noteArrow.RenderTransform = new RotateTransform(180, 53, 30);//up
                 if (noteDirection == 1) noteArrow.RenderTransform = new RotateTransform(0, -45, -20); //down 
                 if (noteDirection == 2) noteArrow.RenderTransform = new RotateTransform(90, 50, 28); //left 
                 if (noteDirection == 3) noteArrow.RenderTransform = new RotateTransform(270, 48, 33);//right
@@ -143,12 +144,12 @@ namespace ReplayBattleRoyal.Entities
                 if (noteDirection == 4)//upleft
                 {
                     noteRectangle.RenderTransform = new RotateTransform(315, noteRectangle.Width / 2, noteRectangle.Height / 2);
-                    noteArrow.RenderTransform = new RotateTransform(135, noteRectangle.Width / 2 - 0, noteRectangle.Height / 2 - 25);
+                    noteArrow.RenderTransform = new RotateTransform(135, noteRectangle.Width / 2 - 15, noteRectangle.Height / 2 - 35);
                 }
                 if (noteDirection == 5)//upright
                 {
                     noteRectangle.RenderTransform = new RotateTransform(45, noteRectangle.Width / 2, noteRectangle.Height / 2);
-                    noteArrow.RenderTransform = new RotateTransform(225, noteRectangle.Width / 2 - 15, noteRectangle.Height / 2 - 18);
+                    noteArrow.RenderTransform = new RotateTransform(225, noteRectangle.Width / 2 - 20, noteRectangle.Height / 2 - 35);
                 }
                 if (noteDirection == 6)//downleft
                 {
@@ -162,17 +163,19 @@ namespace ReplayBattleRoyal.Entities
                 }
 
 
+                //Add Note animation
+                //TODO: make note animation
                 noteRectangle.Opacity = 0.15;
-                for (var i = 0; i < 3; i++)
-                {
-                    await Task.Delay(50 / 3);
-                    noteRectangle.Width += 10;
-                    noteRectangle.Height += 10;
-                    Canvas.SetLeft(noteRectangle, actualXNotePosition - 5 * i);
-                    Canvas.SetBottom(noteRectangle, actualYNotePosition - 5 * i);
-                    Canvas.SetLeft(noteArrow, posxdir - 5 * i);
-                    Canvas.SetBottom(noteArrow, posydir - 5 * i);
-                }
+                //for (var i = 0; i < 3; i++)
+                //{
+                //    await Task.Delay(50 / 3);
+                //    noteRectangle.Width += 10;
+                //    noteRectangle.Height += 10;
+                //    Canvas.SetLeft(noteRectangle, actualXNotePosition - 5 * i);
+                //    Canvas.SetBottom(noteRectangle, actualYNotePosition - 5 * i);
+                //    Canvas.SetLeft(noteArrow, posxdir - 5 * i);
+                //    Canvas.SetBottom(noteArrow, posydir - 5 * i);
+                //}
 
                 //70
                 var soundDelay = 0.070;

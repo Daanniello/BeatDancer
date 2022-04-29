@@ -28,11 +28,14 @@ namespace ReplayBattleRoyal
 
         private Color allPlayersColor;
 
-        public EffectsPanel(MainWindow mainWindow, List<Player> Players)
+        public EffectsPanel(MainWindow mainWindow)
         {
             InitializeComponent();
-            this.mainWindow = mainWindow;
+            this.mainWindow = mainWindow;           
+        }
 
+        public void InitializeEffectPanel(List<Player> Players)
+        {
             foreach (var player in Players)
             {
                 originalColors.Add(player, player.LeftHand.Stroke);
@@ -79,7 +82,7 @@ namespace ReplayBattleRoyal
                 SetTrail(player, originalTrailSize);
 
                 var item = mainWindow.leaderboard.GetPlayer(player.Name);
-                if(item != null) item.Background = originalColors.FirstOrDefault(x => x.Key == player).Value;
+                if (item != null) item.Background = originalColors.FirstOrDefault(x => x.Key == player).Value;
             }
 
             mainWindow.playInstance.NoteColorLeft = originalNoteColorLeft;
@@ -99,12 +102,12 @@ namespace ReplayBattleRoyal
 
         public void ChangeAllSize(double value, bool isIncrease = true)
         {
-            if(!isIncrease) foreach (var player in currentPlayerList) ChangeSize(player, value);
+            if (!isIncrease) foreach (var player in currentPlayerList) ChangeSize(player, value);
             else foreach (var player in currentPlayerList) ChangeSize(player, player.TrailListLeft.First().StrokeThickness + value);
         }
 
         public void ChangeSize(Player player, double size)
-        {             
+        {
             player.LeftHandTip.StrokeThickness = size;
             player.RightHandTip.StrokeThickness = size;
 
@@ -131,7 +134,7 @@ namespace ReplayBattleRoyal
         public void ChangeLeaderboardColor(Player player, Brush color)
         {
             var item = mainWindow.leaderboard.GetPlayer(player.Name);
-            if(item != null) item.Background = color;
+            if (item != null) item.Background = color;
         }
 
         private void ChangeAllColor(Brush color)
@@ -239,7 +242,7 @@ namespace ReplayBattleRoyal
             };
 
             if (value > 0) for (var i = 0; i < value; i++)
-                {                    
+                {
                     mainWindow.CanvasSpace.Children.Add(linel);
                     mainWindow.CanvasSpace.Children.Add(liner);
                     player.TrailListLeft.Add(linel);
@@ -247,7 +250,7 @@ namespace ReplayBattleRoyal
 
                 }
             if (value < 0) for (var i = 0; i > value; i--)
-                {         
+                {
                     mainWindow.CanvasSpace.Children.Remove(player.TrailListLeft.Last());
                     mainWindow.CanvasSpace.Children.Remove(player.TrailListRight.Last());
                     player.TrailListLeft.Remove(player.TrailListLeft.Last());
@@ -274,7 +277,8 @@ namespace ReplayBattleRoyal
 
         private void TestButton_Click(object sender, RoutedEventArgs e)
         {
-            Task.Run(async () => {
+            Task.Run(async () =>
+            {
                 Dispatcher.Invoke(() => { mainWindow.CanvasSpace.RenderTransform = new RotateTransform(new Random().Next(-360, 360), mainWindow.CanvasSpace.Width / 2, mainWindow.CanvasSpace.Height / 2); });
 
                 //for (var i = 0; i < 360; i++)
@@ -283,22 +287,39 @@ namespace ReplayBattleRoyal
                 //    await Task.Delay(5000 / 360);
                 //}
             });
-                               
+
         }
 
         private void ShowDebugButton_Click(object sender, RoutedEventArgs e)
         {
-            mainWindow.SongTimeLabel.Visibility = Visibility.Visible;
-            mainWindow.SpeedLabel.Visibility = Visibility.Visible;
-            mainWindow.TimeLabel.Visibility = Visibility.Visible;
-            mainWindow.TimeLabelLead.Visibility = Visibility.Visible;
+            if (mainWindow.SongTimeLabel.Visibility == Visibility.Visible)
+            {
+                mainWindow.SongTimeLabel.Visibility = Visibility.Hidden;
+                mainWindow.SpeedLabel.Visibility = Visibility.Hidden;
+                mainWindow.TimeLabel.Visibility = Visibility.Hidden;
+                mainWindow.TimeLabelLead.Visibility = Visibility.Hidden;
 
-            mainWindow.LeadLabelText.Visibility = Visibility.Visible;
-            mainWindow.SpeedLabelText.Visibility = Visibility.Visible;
-            mainWindow.SubsLabelText.Visibility = Visibility.Visible;
-            mainWindow.TimeLabelText.Visibility = Visibility.Visible;
-            mainWindow.SongNameLabel.Visibility = Visibility.Visible;
-            mainWindow.LeadNameLabelText.Visibility = Visibility.Visible;
+                mainWindow.LeadLabelText.Visibility = Visibility.Hidden;
+                mainWindow.SpeedLabelText.Visibility = Visibility.Hidden;
+                mainWindow.SubsLabelText.Visibility = Visibility.Hidden;
+                mainWindow.TimeLabelText.Visibility = Visibility.Hidden;
+                mainWindow.SongNameLabel.Visibility = Visibility.Hidden;
+                mainWindow.LeadNameLabelText.Visibility = Visibility.Hidden;
+            }
+            else
+            {
+                mainWindow.SongTimeLabel.Visibility = Visibility.Visible;
+                mainWindow.SpeedLabel.Visibility = Visibility.Visible;
+                mainWindow.TimeLabel.Visibility = Visibility.Visible;
+                mainWindow.TimeLabelLead.Visibility = Visibility.Visible;
+
+                mainWindow.LeadLabelText.Visibility = Visibility.Visible;
+                mainWindow.SpeedLabelText.Visibility = Visibility.Visible;
+                mainWindow.SubsLabelText.Visibility = Visibility.Visible;
+                mainWindow.TimeLabelText.Visibility = Visibility.Visible;
+                mainWindow.SongNameLabel.Visibility = Visibility.Visible;
+                mainWindow.LeadNameLabelText.Visibility = Visibility.Visible;
+            }
         }
     }
 }

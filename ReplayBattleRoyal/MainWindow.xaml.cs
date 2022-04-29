@@ -27,12 +27,13 @@ namespace ReplayBattleRoyal
 
         //Players
         public List<Player> Players = new List<Player>();
+        public Player AveragePlayer;
 
         //Instance
         public PlayInstance playInstance;
         public double songTime = 0;
         public bool streamMode = false;
-        private double _speedFactor = 10.8;
+        private double _speedFactor = 11.8;
 
         public Entities.Leaderboard leaderboard;
         private int backgroundVideoDelay;
@@ -54,7 +55,7 @@ namespace ReplayBattleRoyal
         public MainWindow()
         {
             InitializeComponent();
-            Start(408452, 5, country: null, streamMode: false, Gamemode.GameModes.None, useBackgroundVideo: true, backgrounVideoDelay: -1850);
+            Start(61728, 90, country: null, streamMode: true, Gamemode.GameModes.BattleRoyale, useBackgroundVideo: true, backgrounVideoDelay: -1850);
         }
 
         public async Task Start(int songID, int playerAmount = 1, string country = null, bool streamMode = false, Gamemode.GameModes selectedGameMode = Gamemode.GameModes.None, bool useBackgroundVideo = false, int backgrounVideoDelay = 0)
@@ -148,6 +149,8 @@ namespace ReplayBattleRoyal
             }
             await Task.WhenAll(tasks);
 
+            AveragePlayer = await new Player(this, "000", Colors.White).InitiateAveragePlayer();
+
             //Count down if stream mode is activated
             if (streamMode)
             {
@@ -165,12 +168,19 @@ namespace ReplayBattleRoyal
             //Show intro
             if (streamMode) await MediaManager.ShowIntro(this, gameMode, playerCount, leaderboardInfo.SongName, leaderboardInfo.SongAuthorName, leaderboardInfo.LevelAuthorName, leaderboardInfo.CoverImage);
             LoadingLabel.Visibility = Visibility.Hidden;
-            StartPlay();
+            StartPlay(2);
         }
 
-        public async void StartPlay()
+        public async void StartPlay(int skipAmount = 0)
         {
+            //Remove double time values
+            Players.ForEach(x => x.ReplayModel.Frames = x.ReplayModel.Frames.GroupBy(s => s.A)
+                                                 .Select(grp => grp.FirstOrDefault())
+                                                 .OrderBy(s => s.A)
+                                                 .ToList());
+
             //Gives the correct person the lead
+            var potentialLeadList = new List<Player>();
             foreach (var player in Players)
             {
                 var corrupt = false;
@@ -180,7 +190,7 @@ namespace ReplayBattleRoyal
                     if (player.ReplayModel.Frames[i + 1].A == 0 && player.ReplayModel.Frames[i].A == 0) continue;
                     var offset = player.ReplayModel.Frames[i + 1].A - player.ReplayModel.Frames[i].A;
                     if (biggestOffset < offset) biggestOffset = offset;
-                    if (offset > 1)
+                    if (offset > 5)
                     {
                         corrupt = true;
                         break;
@@ -199,6 +209,7 @@ namespace ReplayBattleRoyal
                         if (player.BiggestFrameOffsetTime < currentLead.BiggestFrameOffsetTime)
                         {
                             currentLead.hasLead = false;
+                            potentialLeadList.Add(currentLead);
                             player.hasLead = true;
                         }
                         else
@@ -210,8 +221,17 @@ namespace ReplayBattleRoyal
                 else player.hasLead = false;
             }
 
-            //Gets the lead player 
             var leadPlayer = Players.FirstOrDefault(x => x.hasLead);
+
+            //Check if lead has to be skipped
+            if (skipAmount > 0 && potentialLeadList.Count >= skipAmount)
+            {
+                leadPlayer.hasLead = false;
+                leadPlayer = potentialLeadList[^skipAmount];
+                leadPlayer.hasLead = true;
+            }
+
+            //Gets the lead player 
             if (leadPlayer != null) LeadNameLabelText.Content = leadPlayer.Name;
             else LeadNameLabelText.Content = "NO LEAD";
 
@@ -457,6 +477,13 @@ namespace ReplayBattleRoyal
                 //Draw Player
                 player.DrawPlayer(player, frame, canvasWidth, canvasHeight, zoomx, zoomy, offsetHeight);
 
+                //Draw average player
+                if (hasLead)
+                {
+                    AveragePlayer.ReplayModel = new ReplayModel() { Info = new Info() { Height = Players.Average(x => x.ReplayModel.Info.Height) } };
+                    var f = new Frame() { R = new H() { P = new Room(), R = new Room() }, L = new H() { P = new Room(), R = new Room() }, H = new H() { P = new Room(), R = new Room() } };
+                    AveragePlayer.DrawPlayer(AveragePlayer, f, canvasWidth, canvasHeight, zoomx, zoomy, offsetHeight);
+                }
 
                 count++;
             }

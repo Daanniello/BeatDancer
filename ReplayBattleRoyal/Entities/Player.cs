@@ -23,6 +23,12 @@ namespace ReplayBattleRoyal.Entities
         public Ellipse RightHand { get; set; }
         public Ellipse LeftHandTip { get; set; }
         public Ellipse RightHandTip { get; set; }
+
+        public QuaternionCalculator.Point CurrentLeftHandTipPoint { get; set; }
+        public QuaternionCalculator.Point CurrentRightHandTipPoint { get; set; }
+
+        public Frame CurrentFrame { get; set; }
+
         public ReplayModel ReplayModel { get; set; }
         public double BiggestFrameOffsetTime { get; set; }
         public List<Line> TrailListLeft { get; set; }
@@ -35,6 +41,65 @@ namespace ReplayBattleRoyal.Entities
             this.color = color;
             this.ID = playerID;
             this.mainWindow = mainWindow;
+        }
+
+        public async Task<Player> InitiateAveragePlayer()
+        {
+            await mainWindow.Dispatcher.Invoke(async () =>
+            {
+                var stroke = new SolidColorBrush(color);
+                var leftHand = new Ellipse() { Stroke = stroke, Fill = stroke, Width = 25, Height = 25 };
+                var rightHand = new Ellipse() { Stroke = stroke, Fill = stroke, Width = 25, Height = 25 };
+                var leftHandTip = new Ellipse() { Stroke = stroke, Fill = stroke, Width = 15, Height = 15 };
+                var rightHandTip = new Ellipse() { Stroke = stroke, Fill = stroke, Width = 15, Height = 15 };
+                var head = new System.Windows.Shapes.Rectangle() { Stroke = stroke, StrokeThickness = 4, Width = 50, Height = 25, RadiusX = 2, RadiusY = 2 };
+                mainWindow.CanvasSpace.Children.Add(leftHand);
+                mainWindow.CanvasSpace.Children.Add(rightHand);
+                mainWindow.CanvasSpace.Children.Add(head);
+                //CanvasSpace.Children.Add(leftHandTip);
+                //CanvasSpace.Children.Add(rightHandTip);
+
+                LeftHand = leftHand;
+                RightHand = rightHand;
+                LeftHandTip = leftHandTip;
+                RightHandTip = rightHandTip;
+                Name = "Average Player";
+                color = color;
+                Head = head;
+
+                TrailListLeft = new List<Line>();
+                TrailListRight = new List<Line>();
+                var trailMax = 8;
+                for (var i = 0; i < trailMax; i++)
+                {
+
+                    var left = new Line()
+                    {
+                        Stroke = LeftHand.Stroke,
+                        Fill = LeftHand.Stroke,
+                        StrokeThickness = 10,
+                        StrokeStartLineCap = PenLineCap.Round,
+                        StrokeEndLineCap = PenLineCap.Round,
+                        Opacity = 1
+                    };
+                    var right = new Line()
+                    {
+                        Stroke = LeftHand.Stroke,
+                        Fill = LeftHand.Stroke,
+                        StrokeThickness = 10,
+                        StrokeStartLineCap = PenLineCap.Round,
+                        StrokeEndLineCap = PenLineCap.Round,
+                        Opacity = 1
+                    };
+
+                    TrailListLeft.Add(left);
+                    TrailListRight.Add(right);
+                    mainWindow.CanvasSpace.Children.Add(left);
+                    mainWindow.CanvasSpace.Children.Add(right);
+                }
+            });
+
+            return this;
         }
 
         public async Task<bool> LoadPlayer()
@@ -53,7 +118,7 @@ namespace ReplayBattleRoyal.Entities
                 //Remove player if start frame is way too late 
                 if (replayModel.Frames.First(x => x.A > 0).A > 10) return false;
 
-                
+
                 await mainWindow.Dispatcher.Invoke(async () =>
                 {
                     var stroke = new SolidColorBrush(color);
@@ -76,6 +141,9 @@ namespace ReplayBattleRoyal.Entities
                     Name = playerInfo.Name;
                     color = color;
                     Head = head;
+                    CurrentLeftHandTipPoint = new QuaternionCalculator.Point() { x = 0, y = 0 };
+                    CurrentRightHandTipPoint = new QuaternionCalculator.Point() { x = 0, y = 0 };
+                    CurrentFrame = new Frame() { R = new H() { P = new Room(), R = new Room() }, L = new H() { P = new Room(), R = new Room() }, H = new H() { P = new Room(), R = new Room() } };
 
                     //If someone has the same name, add a number at the end of it.
                     if (mainWindow.Players.FirstOrDefault(x => x.Name.Split(" *(")[0] == Name) != null) Name += $" *({mainWindow.Players.Where(x => x.Name.Split(" *(")[0] == Name).Count()})";
@@ -161,35 +229,60 @@ namespace ReplayBattleRoyal.Entities
             var centerHeight = canvasHeight / 2;
 
             //Set sabertip positions
-            var tipRight = QuaternionCalculator.RotateSaber(new QuaternionCalculator.Point { x = frame.R.P.X * 2, y = frame.R.P.Y * 2, z = frame.R.P.Z * 2 }, 2.3, new QuaternionCalculator.Quaternion { x = frame.R.R.X, y = frame.R.R.Y, z = frame.R.R.Z, w = (double)frame.R.R.W });
-            var tipLeft = QuaternionCalculator.RotateSaber(new QuaternionCalculator.Point { x = frame.L.P.X * 2, y = frame.L.P.Y * 2, z = frame.L.P.Z * 2 }, 2.3, new QuaternionCalculator.Quaternion { x = frame.L.R.X, y = frame.L.R.Y, z = frame.L.R.Z, w = (double)frame.L.R.W });
+            if (player.Name == "Average Player")
+            {
+                CurrentLeftHandTipPoint = new QuaternionCalculator.Point() { x = mainWindow.Players.Average(x => x.CurrentLeftHandTipPoint.x), y = mainWindow.Players.Average(x => x.CurrentLeftHandTipPoint.y) };
+                CurrentRightHandTipPoint = new QuaternionCalculator.Point() { x = mainWindow.Players.Average(x => x.CurrentRightHandTipPoint.x), y = mainWindow.Players.Average(x => x.CurrentRightHandTipPoint.y) };
+
+                frame.R.P.X = mainWindow.Players.Average(x => x.CurrentFrame.R.P.X);
+                frame.R.P.Y = mainWindow.Players.Average(x => x.CurrentFrame.R.P.Y);
+                frame.R.P.Z = mainWindow.Players.Average(x => x.CurrentFrame.R.P.Z);
+
+                frame.L.P.X = mainWindow.Players.Average(x => x.CurrentFrame.L.P.X);
+                frame.L.P.Y = mainWindow.Players.Average(x => x.CurrentFrame.L.P.Y);
+                frame.L.P.Z = mainWindow.Players.Average(x => x.CurrentFrame.L.P.Z);
+
+                frame.H.P.X = mainWindow.Players.Average(x => x.CurrentFrame.H.P.X);
+                frame.H.P.Y = mainWindow.Players.Average(x => x.CurrentFrame.H.P.Y);
+                frame.H.R.Z = mainWindow.Players.Average(x => x.CurrentFrame.H.R.Z);
+
+                frame.A = 1;
+                CurrentFrame = frame;
+
+            }
+            else
+            {
+                CurrentLeftHandTipPoint = QuaternionCalculator.RotateSaber(new QuaternionCalculator.Point { x = frame.R.P.X * 2, y = frame.R.P.Y * 2, z = frame.R.P.Z * 2 }, 2.3, new QuaternionCalculator.Quaternion { x = frame.R.R.X, y = frame.R.R.Y, z = frame.R.R.Z, w = (double)frame.R.R.W });
+                CurrentRightHandTipPoint = QuaternionCalculator.RotateSaber(new QuaternionCalculator.Point { x = frame.L.P.X * 2, y = frame.L.P.Y * 2, z = frame.L.P.Z * 2 }, 2.3, new QuaternionCalculator.Quaternion { x = frame.L.R.X, y = frame.L.R.Y, z = frame.L.R.Z, w = (double)frame.L.R.W });
+                CurrentFrame = frame;
+            }
 
             mainWindow.Dispatcher.Invoke(() =>
             {
                 //Set Right hand tip position
-                Canvas.SetLeft(player.RightHandTip, tipRight.x * 225 + 625);
-                Canvas.SetBottom(player.RightHandTip, tipRight.y * 225 - 100);
+                Canvas.SetLeft(player.RightHandTip, CurrentRightHandTipPoint.x * 225 + 625);
+                Canvas.SetBottom(player.RightHandTip, CurrentRightHandTipPoint.y * 225 - 100);
                 //Set Left hand tip position
-                Canvas.SetLeft(player.LeftHandTip, tipLeft.x * 225 + 600);
-                Canvas.SetBottom(player.LeftHandTip, tipLeft.y * 225 - 100);
+                Canvas.SetLeft(player.LeftHandTip, CurrentLeftHandTipPoint.x * 225 + 600);
+                Canvas.SetBottom(player.LeftHandTip, CurrentLeftHandTipPoint.y * 225 - 100);
                 //Set Left Hand Positions
-                Canvas.SetLeft(player.LeftHand, centerWidth + frame.L.P.X * zoomx);
-                Canvas.SetBottom(player.LeftHand, centerHeight + offsetHeight + (frame.L.P.Y + (1.7 - player.ReplayModel.Info.Height))/*Removes height differences*/ * zoomy);
+                Canvas.SetLeft(player.LeftHand, centerWidth + CurrentFrame.L.P.X * zoomx);
+                Canvas.SetBottom(player.LeftHand, centerHeight + offsetHeight + (CurrentFrame.L.P.Y + (1.7 - player.ReplayModel.Info.Height))/*Removes height differences*/ * zoomy);
                 //Set Right Hand Positions
-                Canvas.SetLeft(player.RightHand, centerWidth + frame.R.P.X * zoomx);
-                Canvas.SetBottom(player.RightHand, centerHeight + offsetHeight + (frame.R.P.Y + (1.7 - player.ReplayModel.Info.Height))/*Removes height differences*/ * zoomy);
+                Canvas.SetLeft(player.RightHand, centerWidth + CurrentFrame.R.P.X * zoomx);
+                Canvas.SetBottom(player.RightHand, centerHeight + offsetHeight + (CurrentFrame.R.P.Y + (1.7 - player.ReplayModel.Info.Height))/*Removes height differences*/ * zoomy);
                 //Set head Positions
-                Canvas.SetLeft(player.Head, centerWidth + frame.H.P.X * zoomx);
-                Canvas.SetBottom(player.Head, centerHeight + offsetHeight + (frame.H.P.Y + (1.7 - player.ReplayModel.Info.Height))/*Removes height differences*/ * zoomy + 200);
+                Canvas.SetLeft(player.Head, centerWidth + CurrentFrame.H.P.X * zoomx);
+                Canvas.SetBottom(player.Head, centerHeight + offsetHeight + (CurrentFrame.H.P.Y + (1.7 - player.ReplayModel.Info.Height))/*Removes height differences*/ * zoomy + 200);
                 //Set head Rotation
-                player.Head.RenderTransform = new RotateTransform(frame.H.R.Z * 90, player.Head.Width / 2, player.Head.Height / 2);
+                player.Head.RenderTransform = new RotateTransform(CurrentFrame.H.R.Z * 90, player.Head.Width / 2, player.Head.Height / 2);
 
 
-                if (hasLead) mainWindow.TimeLabelLead.Content = frame.A;
-                else mainWindow.TimeLabel.Content = frame.A;
+                if (hasLead) mainWindow.TimeLabelLead.Content = CurrentFrame.A;
+                else mainWindow.TimeLabel.Content = CurrentFrame.A;
 
                 //Give positions to each trail
-                if (player.ReplayModel.Frames.IndexOf(frame) > 1)
+                if (player.Name == "Average Player" || player.ReplayModel.Frames.IndexOf(CurrentFrame) > 1)
                 {
                     if (trailIndex == player.TrailListLeft.Count) trailIndex = 0;
 

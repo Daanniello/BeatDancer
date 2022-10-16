@@ -33,7 +33,7 @@ namespace ReplayBattleRoyal
         public PlayInstance playInstance;
         public double songTime = 0;
         public bool streamMode = false;
-        private double _speedFactor = 11.8;
+        private double _speedFactor = 12.35;
 
         public Entities.Leaderboard leaderboard;
         private int backgroundVideoDelay;
@@ -53,13 +53,14 @@ namespace ReplayBattleRoyal
         private Random random = new Random();
 
         public MainWindow()
-        {
+        {            
             InitializeComponent();
-            Start(61728, 90, country: null, streamMode: true, Gamemode.GameModes.BattleRoyale, useBackgroundVideo: true, backgrounVideoDelay: -1850);
+            //Start(songID, playerAmount, country, streamMode, gamemode, withBackgroundVideo, backgroundDelay);
         }
 
-        public async Task Start(int songID, int playerAmount = 1, string country = null, bool streamMode = false, Gamemode.GameModes selectedGameMode = Gamemode.GameModes.None, bool useBackgroundVideo = false, int backgrounVideoDelay = 0)
+        public async Task Start(double startSpeedFactor, int songID, int playerAmount = 1, string country = null, bool streamMode = false, Gamemode.GameModes selectedGameMode = Gamemode.GameModes.None, bool useBackgroundVideo = false, int backgrounVideoDelay = 0)
         {
+            _speedFactor = startSpeedFactor;
             this.streamMode = streamMode;
             this.backgroundVideoDelay = backgrounVideoDelay;
             this.songID = songID;
@@ -168,7 +169,7 @@ namespace ReplayBattleRoyal
             //Show intro
             if (streamMode) await MediaManager.ShowIntro(this, gameMode, playerCount, leaderboardInfo.SongName, leaderboardInfo.SongAuthorName, leaderboardInfo.LevelAuthorName, leaderboardInfo.CoverImage);
             LoadingLabel.Visibility = Visibility.Hidden;
-            StartPlay(2);
+            StartPlay(1);
         }
 
         public async void StartPlay(int skipAmount = 0)
@@ -315,7 +316,7 @@ namespace ReplayBattleRoyal
                 if (player.ReplayModel.NoteTime.Count != 0)
                 {
                     //Add Notes
-                    if (storedNoteTimesHitsound.Count > 0)
+                    if (storedNoteTimesHitsound.Count > 0 && hasLead)
                     {
                         var noteAnimationDelay = 0.300;
                         var noteTimeHitsound = storedNoteTimesHitsound.First();
@@ -329,12 +330,9 @@ namespace ReplayBattleRoyal
 
                         if (noteTimeHitsound < frame.A + noteAnimationDelay)
                         {
-                            if (hasLead)
-                            {
-                                var note = player.ReplayModel.NoteInfos.First();
-                                playInstance.AddNote(note, noteAnimationDelay);
-                                player.ReplayModel.NoteInfos.Remove(note);
-                            }
+                            var note = player.ReplayModel.NoteInfos.First();
+                            playInstance.AddNote(note, noteAnimationDelay);
+                            player.ReplayModel.NoteInfos.Remove(note);
                             storedNoteTimesHitsound.Remove(noteTimeHitsound);
                         }
                     }
@@ -461,7 +459,8 @@ namespace ReplayBattleRoyal
                 }
 
                 //Wait till next frame 
-                await Task.Delay(TimeSpan.FromSeconds(timeTillNextFrame) / _speedFactor);
+                var waitTime = TimeSpan.FromSeconds(timeTillNextFrame) / _speedFactor;
+                await Task.Delay(waitTime);
 
                 //Add points from the player on the leaderboard
                 if (count % (8 * Players.Count) == 0)

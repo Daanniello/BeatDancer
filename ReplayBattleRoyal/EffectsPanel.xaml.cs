@@ -321,5 +321,12 @@ namespace ReplayBattleRoyal
                 mainWindow.LeadNameLabelText.Visibility = Visibility.Visible;
             }
         }
+
+        private void ExitButton_Click(object sender, RoutedEventArgs e)
+        {
+            new PreparationWindow().Show();
+            mainWindow.Close();
+            this.Close();
+        }
     }
 }

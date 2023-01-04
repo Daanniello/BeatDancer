@@ -496,5 +496,10 @@ namespace ReplayBattleRoyal
             var player = new Player(this, playerID, color);
             return await player.LoadPlayer();
         }
+
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            if(playInstance.mediaPlayer != null) playInstance.mediaPlayer.Stop();
+        }
     }
 }

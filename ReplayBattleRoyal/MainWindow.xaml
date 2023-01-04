@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ReplayBattleRoyal"
         mc:Ignorable="d"
-        Title="MainWindow" Height="2160" Width="3840" WindowStartupLocation="CenterScreen" WindowState="Maximized" Background="Black" SizeToContent="WidthAndHeight">
+        Title="MainWindow" Height="2160" Width="3840" WindowStartupLocation="CenterScreen" WindowState="Maximized" Background="Black" SizeToContent="WidthAndHeight" Closed="Window_Closed">
     <Grid x:Name="MainGrid">
         <Grid x:Name="LightshowOverlayGrid" Grid.ColumnSpan="2">
             <MediaElement x:Name="BackgroundVideo" Opacity="0.4" LoadedBehavior="Manual" UnloadedBehavior="Pause"/>

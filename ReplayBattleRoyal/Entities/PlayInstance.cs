@@ -23,7 +23,7 @@ namespace ReplayBattleRoyal.Entities
     public class PlayInstance
     {
         private MainWindow mainWindow;
-        private static MediaPlayer mediaPlayer = new MediaPlayer();
+        public MediaPlayer mediaPlayer = new MediaPlayer();
 
         public MapDetailsModel mapDetails;
         public List<Grid> lightEventBackgrounds = new List<Grid>();

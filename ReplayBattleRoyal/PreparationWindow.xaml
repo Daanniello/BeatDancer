@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ReplayBattleRoyal"
         mc:Ignorable="d"
-        Title="Preparation" Height="511" Width="577">
+        Title="Preparation" Height="511" Width="577" Closed="Window_Closed">
     <Grid Background="#FFE4E4E4">
         <Button x:Name="StartButton" Content="Start" Margin="134,389,133,0" Click="StartButton_Click" Background="#FF2E4DDA" Foreground="White" FontSize="36" FontFamily="Segoe UI" Height="54" VerticalAlignment="Top"/>
         <TextBox x:Name="MapScoresaberIDTextbox" Height="29" Margin="133,130,133,0" TextWrapping="Wrap" Text="414580" VerticalAlignment="Top"/>

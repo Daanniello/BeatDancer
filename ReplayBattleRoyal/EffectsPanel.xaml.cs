@@ -324,7 +324,7 @@ namespace ReplayBattleRoyal
 
         private void ExitButton_Click(object sender, RoutedEventArgs e)
         {
-            new PreparationWindow().Show();
+            new PreparationWindow().Show();            
             mainWindow.Close();
             this.Close();
         }

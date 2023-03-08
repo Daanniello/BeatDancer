@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Reflection.Metadata;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -107,7 +108,7 @@ namespace ReplayBattleRoyal.Entities
             try
             {
                 var playerInfo = await mainWindow.leaderboard.scoresaberClient.Api.Players.GetPlayer(Convert.ToInt64(ID));
-                var replayModel = await GetReplayModel($"https://sspreviewdecode.azurewebsites.net/?playerID={ID}&songID={mainWindow.songID}");
+                var replayModel = await GetReplayModel(mainWindow.songID.ToString(), ID);
 
                 if (replayModel == null || playerInfo == null) return false;
                 if (replayModel.Frames == null || replayModel.Info.LeftHanded == true) return false; //TODO: include left hand mode
@@ -413,29 +414,12 @@ namespace ReplayBattleRoyal.Entities
             return (currentScore, currentMaxScore);
         }
 
-        public async Task<ReplayModel> GetReplayModel(string url)
+        public async Task<ReplayModel> GetReplayModel(string songID, string playerID)
         {
-            //Get content from website as string
-            try
-            {
-                using (var client = new HttpClient())
-                {
-                    var response = await client.GetAsync(url);
-                    if (response.StatusCode == HttpStatusCode.OK)
-                    {
-                        var content = await response.Content.ReadAsStringAsync();
-                        if (content.Contains("Old replay format not supported.") || content.Contains("Replay not found. Try better ranked play.")) return null;
-                        var f = (string)JsonConvert.DeserializeObject(content);
-                        var jsonObject = JsonConvert.DeserializeObject<ReplayModel>(f);
-                        return jsonObject;
-                    }
-                }
-                return null;
-            }
-            catch (Exception ex)
-            {
-                return null;
-            }
+            var ssDecoder = new SSDecoder.Controllers.SSDecoder().GetEmpDetails(playerID, songID);
+            var json = JsonConvert.SerializeObject(ssDecoder);
+            var jsonObject = JsonConvert.DeserializeObject<ReplayModel>(json);
+            return jsonObject;
         }
     }
 }
